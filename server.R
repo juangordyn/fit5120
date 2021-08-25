@@ -7,7 +7,7 @@ library('colorRamps')
 library('lubridate')
 library('shinybusy')
 
-api_key<-'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
+api_key<-''
 url_sensor_live <- 'https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json?$limit=20000'
 maximum_stay_cost_df <- read.csv('maximum_stay_cost.csv')
 
