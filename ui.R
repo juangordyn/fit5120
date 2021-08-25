@@ -5,7 +5,7 @@ library(shinyTime)
 library(shinythemes)
 library(shinyWidgets)
 
-key <- ''
+key <- 'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 
 ui <- dashboardPage(
   dashboardHeader(      title = "Compare public transport and car journeys",
@@ -86,6 +86,8 @@ ui <- dashboardPage(
     uiOutput("show_non_restricted"),
     br(),
     br(),
-    uiOutput("show_private_statistics")
+    uiOutput("show_time_statistics"),
+    br(),
+    uiOutput("show_cost_statistics")
   )
 )
