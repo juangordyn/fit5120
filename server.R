@@ -7,7 +7,7 @@ library('colorRamps')
 library('lubridate')
 library('shinybusy')
 
-api_key<-''
+api_key<-'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 url_sensor_live <- 'https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json?$limit=20000'
 maximum_stay_cost_df <- read.csv('maximum_stay_cost.csv')
 
@@ -111,16 +111,32 @@ retrieve_route_public <-function(public_transport_directions){
     num_stops <- text_click_polyline_df[i, 'num_stops']
     
     if(travel_mode != 'WALKING'){
+      if(i!=nrow(text_click_polyline_df)){
       
-      final_string_polyline <- paste(final_string_polyline, paste('<br/>STEP ', i, '<br/>Travel mode: ', vehicle_name,'<br />Line: ',vehicle_line,'<br />Num_stops: ',num_stops, '<br />Distance: ', distance,
-                                                                  '<br />Duration: ', duration,'<br />' ,sep=''), sep='')
+      final_string_polyline <- paste(final_string_polyline, paste(vehicle_name,'<br />Line ',vehicle_line,' | ',num_stops, ' stops | ', distance,
+                                                                  ' | ', duration,'<br /><br />' ,sep=''), sep='')
       
-    }
+      }
+      
+      else{
+        final_string_polyline <- paste(final_string_polyline, paste(vehicle_name,'<br />Line ',vehicle_line,' | ',num_stops, ' stops | ', distance,
+                                                                    ' | ', duration,'<br />' ,sep=''), sep='')
+      }
+      
+      }
+    
     
     else{
+      if(i!=nrow(text_click_polyline_df)){
       
-      final_string_polyline<- paste(final_string_polyline, paste('<br/>STEP ', i, '<br/>Travel mode: ', travel_mode, '<br />Distance: ', distance,
-                                                    '<br />Duration: ', duration,'<br />', sep=''))
+      final_string_polyline<- paste(final_string_polyline, paste(travel_mode, '<br />', distance,
+                                                    ' | ', duration,'<br /><br />', sep=''))
+      }
+      else{
+        
+        final_string_polyline<- paste(final_string_polyline, paste(travel_mode, '<br />', distance,
+                                                                   ' | ', duration,'<br />', sep=''))
+      }
       
     }
     
@@ -138,10 +154,30 @@ retrieve_route_private <- function(car_directions, parking_time, parking_distanc
     distance <- text_click_polyline_df[i, 'distance']
     duration <- text_click_polyline_df[i, 'duration']
     text_click_vector <- c(text_click_vector, paste('Driving<br />', distance,
-                                                    ' | ', duration,'<br /><br />Parking<br />', parking_time, ' mins<br /><br />Walk CarPark-Dest<br/ >', parking_distance, ' mts | ',walking_time,' mins', sep=''))
+                                                    ' | ', duration,'<br /><br />Parking<br />', parking_time, ' min<br /><br />Walk CarPark-Dest<br/ >', parking_distance, ' mts | ',walking_time,' min', sep=''))
   }
   df_route$polyline_hover <- text_click_vector
   return(df_route)
+}
+
+parking_cost_calculator <- function(day, hour, hourly_cost, length_of_stay){
+  if(day!='Sunday' & ((as.POSIXct(hour, format='%H:%M')>as.POSIXct('7:30', format='%H:%M')&as.POSIXct(hour, format ='%H:%M')<as.POSIXct('18:30', format='%H:%M'))) | day!='Sunday'){
+    parking_cost <- round((hourly_cost)*(as.numeric(length_of_stay)/60), 2)
+  }
+  else{
+    parking_cost = 0
+  }
+  return(parking_cost)
+}
+
+transport_cost_calculator <- function(hour){
+  if((as.POSIXct(hour, format='%H:%M')>as.POSIXct('16:00', format='%H:%M')) & (as.POSIXct(hour, format='%H:%M')<as.POSIXct('19:00', format='%H:%M'))){
+    public_fare <- 3.15
+  }
+  else{
+    public_fare <- 4.50
+  }
+  return(public_fare)
 }
 
 server <- function(input, output, session){
@@ -163,7 +199,7 @@ server <- function(input, output, session){
                height = 1000)})
   
   observeEvent(input$compare_journeys,{
-    print(input$jsValuePretty)
+    print(input$origin)
     show_modal_spinner(text = 'This might take a little while...')
     max_walk_reactive(input$max_walk)
     length_of_stay_reactive(input$length_of_stay)
@@ -175,13 +211,13 @@ server <- function(input, output, session){
     reticulate::source_python("python_helper_functions.py")
       if(input$leaving=='Now'){
         
-        car_directions <- directions(input$jsValuePretty, input$destination, 'driving', 'now', 'pessimistic')
+        car_directions <- directions(input$origin, input$destination, 'driving', 'now', 'pessimistic')
         df_route <- retrieve_route_private(car_directions)
         
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
         end_lng <- car_directions$routes$legs[[1]]$end_location$lng
         
-        public_transport_directions <- directions(input$jsValuePretty, input$destination, 'transit', 'now', 'best_guess')
+        public_transport_directions <- directions(input$origin, input$destination, 'transit', 'now', 'best_guess')
         df_route_public <- retrieve_route_public(public_transport_directions)
         
         df_destination <- cbind(
@@ -260,12 +296,12 @@ server <- function(input, output, session){
               departure_time <- as.POSIXct(input$hour, format ='%H:%M')
             }
           }
-        car_directions <- directions(input$jsValuePretty, input$destination, 'driving', departure_hour, 'pessimistic')
+        car_directions <- directions(input$origin, input$destination, 'driving', departure_hour, 'pessimistic')
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
         end_lng <- car_directions$routes$legs[[1]]$end_location$lng
         print(end_lat)
         print(end_lng)
-        public_transport_directions <- directions(input$jsValuePretty, input$destination, 'transit', departure_hour, 'best_guess')
+        public_transport_directions <- directions(input$origin, input$destination, 'transit', departure_hour, 'best_guess')
         df_route_public <- retrieve_route_public(public_transport_directions)
         df_destination <- cbind(
           car_directions$routes$legs[[1]]$end_location,
@@ -280,13 +316,32 @@ server <- function(input, output, session){
         parking_statistics_df[parking_statistics_df$maximum_stay<as.numeric(length_of_stay_reactive()),'color']<-'#ECC904'
         parking_data_reactive_complete(parking_statistics_df)
         parking_data_reactive_incomplete(parking_statistics_df[parking_statistics_df$color!='#ECC904', ])
+        
+        # statistics to print in Dashboard
+        parking_occupation <- round(mean(parking_statistics_df[, 'occupation_ratio' ]))
+        time_restriction_ratio <- round((nrow(parking_statistics_df[parking_statistics_df$color=='#ECC904', ])/nrow(parking_statistics_df))*100)
+        parking_hourly_cost <- parking_statistics_df[, 'parking_cost'][1]/100
+        parking_cost <- parking_cost_calculator(day_reactive(), time_reactive(), parking_hourly_cost, length_of_stay_reactive())
         parking_time <- parking_statistics_df[, 'parking_time'][1]
         parking_distance <- parking_statistics_df[, 'parking_distance'][1]
         walking_time <- parking_statistics_df[, 'walking_time'][1]
         car_duration = round((car_directions$routes$legs[[1]]$duration$value)/60)
         total_time_private <- car_duration + parking_time + walking_time
+        total_time_public <- round(sum(public_transport_directions$routes$legs[[1]]$steps[[1]]$duration$value)/60)
+        
+        # private vehicle costs
+        car_distance = car_directions$routes$legs[[1]]$distance$value
+        petrol_cost_per_litre = 1.27
+        avg_fuel_consumption_l_per_km = 0.2
+        driving_cost = round((car_distance/1000)*avg_fuel_consumption_l_per_km*petrol_cost_per_litre)
+        total_private_cost = driving_cost + parking_cost
+        
+        # public transport costs
+        public_transport_cost <- transport_cost_calculator(time_reactive())
+        
         df_route <- retrieve_route_private(car_directions, parking_time, parking_distance, walking_time)
         time_steps_private <- df_route[, 'polyline_hover'][1]
+        time_steps_public <- df_route_public[, 'polyline_hover'][1]
         google_map_update(map_id = "myMap") %>% 
           clear_polylines() %>% clear_circles %>% clear_markers %>% 
           add_polylines(data = df_route,
@@ -314,12 +369,17 @@ server <- function(input, output, session){
       fluidRow(column(6,style="border-radius:8px; background-color: #7E8BFA; border-style:solid; border-color:#b1d1fc; margin: 5px; padding: 10px", div(prettyCheckbox('restrictions_checkbox', 'Show only parkings within time restriction', FALSE), style = "color:white;")))
       })
     
-    output$show_private_statistics <- renderUI({
-    fluidRow(width = 12, valueBoxOutput("time_private")  ,valueBoxOutput("cost_private"))})
+    output$show_time_statistics <- renderUI({
+    fluidRow(width = 12, valueBoxOutput("time_private")  , valueBoxOutput("time_public"), valueBoxOutput("parking_stats"))})
     
-    output$time_private <- renderValueBox({valueBox(paste(formatC(total_time_private, format="d", big.mark=','),'mins') , HTML(paste('<b>Total Journey Time</b><br /><br />', time_steps_private), sep=''), icon = icon("clock"), color = "orange")})
-    output$cost_private <- renderValueBox({valueBox(formatC(total_time_private, format="d", big.mark=',') , 'Total Journey Time', icon = icon("dollar-sign"),color = "orange")})
+    output$show_cost_statistics <- renderUI({
+      fluidRow(width = 12, valueBoxOutput("cost_private")  , valueBoxOutput("cost_public"))})
     
+    output$time_private <- renderValueBox({valueBox(paste(formatC(total_time_private, format="d", big.mark=','),'min') , HTML(paste('<b>Total Journey Time Private</b><br /><br />', time_steps_private), sep=''), icon = icon("clock"), color = "orange")})
+    output$time_public <- renderValueBox({valueBox(paste(formatC(total_time_public, format="d", big.mark=','),'min') , HTML(paste('<b>Total Journey Time Public</b><br /><br />', time_steps_public), sep=''), icon = icon("clock"),color = "green")})
+    output$parking_stats <- renderValueBox({valueBox(paste(formatC(parking_occupation, format="d", big.mark=','),'%') , HTML(paste('<b>Occupation ratio</b><br /><br />Parking Time: ', parking_time, 'min<br /><br />Parking Cost: ', parking_cost, '$<br /><br />Time restriction non-availability: ', time_restriction_ratio), '%', sep=''), icon = icon("parking"),color = "purple")})
+    output$cost_private <- renderValueBox({valueBox(paste('$', formatC(total_private_cost, format="d", big.mark=',')) , HTML(paste('<b>Total Journey Cost Private</b><br /><br />Driving Cost: $', driving_cost,'<br />Parking Cost: ', parking_cost), sep=''), icon = icon("dollar-sign"), color = "orange")})
+    output$cost_public <- renderValueBox({valueBox(paste('$', formatC(public_transport_cost, format="d", big.mark=',')) , HTML(paste('<b>Total Journey Cost Public</b><br /><br />', sep='')), icon = icon("dollar-sign"),color = "green")})
     })
   
   observeEvent(input$restrictions_checkbox,{
