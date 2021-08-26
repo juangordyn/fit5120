@@ -6,6 +6,7 @@ library('googleway')
 library('colorRamps')
 library('lubridate')
 library('shinybusy')
+library('shinyalert')
 
 api_key<-'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 url_sensor_live <- 'https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json?$limit=20000'
@@ -161,7 +162,7 @@ retrieve_route_private <- function(car_directions, parking_time, parking_distanc
 }
 
 parking_cost_calculator <- function(day, hour, hourly_cost, length_of_stay){
-  if(day!='Sunday' & ((as.POSIXct(hour, format='%H:%M')>as.POSIXct('7:30', format='%H:%M')&as.POSIXct(hour, format ='%H:%M')<as.POSIXct('18:30', format='%H:%M'))) | day!='Sunday'){
+  if(day!='Sunday' & ((as.POSIXct(hour, format='%H:%M')>as.POSIXct('7:30', format='%H:%M')&as.POSIXct(hour, format ='%H:%M')<as.POSIXct('18:30', format='%H:%M')))){
     parking_cost <- round((hourly_cost)*(as.numeric(length_of_stay)/60), 2)
   }
   else{
@@ -181,7 +182,8 @@ transport_cost_calculator <- function(hour){
 }
 
 server <- function(input, output, session){
-  
+  destination_reactive <- reactiveVal()
+  origin_reactive <- reactiveVal()
   max_walk_reactive <- reactiveVal()
   length_of_stay_reactive <- reactiveVal()
   time_reactive <- reactiveVal()
@@ -199,25 +201,61 @@ server <- function(input, output, session){
                height = 1000)})
   
   observeEvent(input$compare_journeys,{
-    print(input$origin)
-    show_modal_spinner(text = 'This might take a little while...')
-    max_walk_reactive(input$max_walk)
+    
+    if(is.null(input$jsValuePretty)){
+      destination_reactive(input$destination)
+    }
+    else{
+      destination_reactive(input$jsValuePretty)
+    }
+    max_walk_reactive(800)
     length_of_stay_reactive(input$length_of_stay)
     time_reactive(input$hour)
     day_reactive(input$day)
+    origin_reactive(input$origin)
     
     python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
     reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
+    
+    cbd_distance <- 0
+    journey_distance <- 0
+    
       if(input$leaving=='Now'){
         
-        car_directions <- directions(input$origin, input$destination, 'driving', 'now', 'pessimistic')
-        df_route <- retrieve_route_private(car_directions)
-        
+        car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', 'now', 'pessimistic')
+        print(car_directions$status)
+        if(car_directions$status=='ZERO_RESULTS'| car_directions$status=='NOT_FOUND'){
+          shinyalert(title = "Please check your input addresses", type = "error")
+        }
+        else{
+        show_modal_spinner(text = 'This might take a little while...')
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
         end_lng <- car_directions$routes$legs[[1]]$end_location$lng
+        start_lat <- car_directions$routes$legs[[1]]$start_location$lat
+        start_lng<- car_directions$routes$legs[[1]]$start_location$lng
         
-        public_transport_directions <- directions(input$origin, input$destination, 'transit', 'now', 'best_guess')
+        print(end_lat)
+        print(end_lng)
+        cbd_centre_lat <- -37.811871
+        cbd_centre_lng <- 144.96478
+        cbd_distance <- distHaversine(c(end_lng, end_lat), c(cbd_centre_lng, cbd_centre_lat))
+        
+        if(cbd_distance>1500){
+          
+          remove_modal_spinner()
+          shinyalert(title = "Your destination address is outside Melbourne CBD", type = "error")
+          
+        }
+          
+        else{
+          journey_distance <- distHaversine(c(end_lng, end_lat), c(start_lng, start_lat))
+          if (journey_distance >20000){
+            remove_modal_spinner()
+            shinyalert(title = "Your origin address is not within a 20 km radius of the CBD", type = "error")
+          }
+        else{
+        public_transport_directions <- directions(origin_reactive(), destination_reactive(), 'transit', 'now', 'best_guess')
         df_route_public <- retrieve_route_public(public_transport_directions)
         
         df_destination <- cbind(
@@ -233,8 +271,12 @@ server <- function(input, output, session){
         }
         hour_now <- as.character(hour(now))
         time <- paste(hour_now,':',minutes, sep='')
-        day_of_week <- wday(Sys.time()) - 1
-        sensor_live_statistics <-calculate_parking_statistics_live(marker_ids, time, day_of_week)
+        print(time)
+        day_of_week <- wday(Sys.time())
+        days_of_week <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')
+        day_of_week <- days_of_week[day_of_week]
+        print(day_of_week)
+        sensor_live_statistics <- calculate_parking_statistics(end_lat, end_lng, as.integer(length_of_stay_reactive()), as.integer(max_walk_reactive()), time, day_of_week)
         sensor_live_df <- merge(x=sensor_live_df, y=sensor_live_statistics, by = 'marker_id')
         sensor_live_df$avg_vacancy <- round(sensor_live_df$avg_vacancy)
         sensor_live_df$avg_occupation <- round(sensor_live_df$avg_occupation)
@@ -255,6 +297,35 @@ server <- function(input, output, session){
         
         parking_data_reactive_complete(sensor_live_df)
         parking_data_reactive_incomplete(sensor_live_df[sensor_live_df$color!='#ECC904', ])
+        
+        # statistics to print in Dashboard
+        parking_occupation <- round(mean(sensor_live_df[, 'occupation_ratio' ]))
+        time_restriction_ratio <- round((nrow(sensor_live_df[sensor_live_df$color=='#ECC904', ])/nrow(sensor_live_df))*100)
+        parking_hourly_cost <- sensor_live_df[, 'parking_cost'][1]
+        if(parking_hourly_cost>10){
+          parking_hourly_cost <- parking_hourly_cost/100
+        }
+        parking_cost <- parking_cost_calculator(day_of_week, time, parking_hourly_cost, length_of_stay_reactive())
+        parking_time <- sensor_live_df[, 'parking_time'][1]
+        parking_distance <- sensor_live_df[, 'parking_distance'][1]
+        walking_time <- sensor_live_df[, 'walking_time'][1]
+        car_duration = round((car_directions$routes$legs[[1]]$duration$value)/60)
+        total_time_private <- car_duration + parking_time + walking_time
+        total_time_public <- round(sum(public_transport_directions$routes$legs[[1]]$steps[[1]]$duration$value)/60)
+        
+        # private vehicle costs
+        car_distance = car_directions$routes$legs[[1]]$distance$value
+        petrol_cost_per_litre = 1.27
+        avg_fuel_consumption_l_per_km = 0.5
+        driving_cost = round((car_distance/1000)*avg_fuel_consumption_l_per_km*petrol_cost_per_litre)
+        total_private_cost = driving_cost + parking_cost
+        
+        # public transport costs
+        public_transport_cost <- transport_cost_calculator(time_reactive())
+        
+        df_route <- retrieve_route_private(car_directions, parking_time, parking_distance, walking_time)
+        time_steps_private <- df_route[, 'polyline_hover'][1]
+        time_steps_public <- df_route_public[, 'polyline_hover'][1]
         
       google_map_update(map_id = "myMap") %>% 
         clear_polylines() %>% clear_circles %>% clear_markers %>% 
@@ -277,9 +348,12 @@ server <- function(input, output, session){
               add_circles(data=parking_data_reactive_complete(), lat='lat', lon='lon', 
                                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window='hover_over') %>% 
         add_markers(data=df_destination, info_window = "address")
+      map_title <- 'Public vs Private Journey including Real-Time Parking Availability'
       remove_modal_spinner()
+        }
       }
-    
+      }
+      }
     else{
         
           days_of_week <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')
@@ -296,12 +370,40 @@ server <- function(input, output, session){
               departure_time <- as.POSIXct(input$hour, format ='%H:%M')
             }
           }
-        car_directions <- directions(input$origin, input$destination, 'driving', departure_hour, 'pessimistic')
+        car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', departure_hour, 'pessimistic')
+        
+        if(car_directions$status=='ZERO_RESULTS'|car_directions$status=='NOT FOUND'){
+          shinyalert(title = "Please check your input adresses", type = "error")
+        }
+        else{
+        
+        show_modal_spinner(text = 'This might take a little while...')
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
         end_lng <- car_directions$routes$legs[[1]]$end_location$lng
+        start_lat <- car_directions$routes$legs[[1]]$start_location$lat
+        start_lng <- car_directions$routes$legs[[1]]$start_location$lng
+        
         print(end_lat)
         print(end_lng)
-        public_transport_directions <- directions(input$origin, input$destination, 'transit', departure_hour, 'best_guess')
+        cbd_centre_lat <- -37.811871
+        cbd_centre_lng <- 144.963494
+        cbd_distance <- distHaversine(c(end_lng, end_lat), c(cbd_centre_lng, cbd_centre_lat))
+        
+        if(cbd_distance>1500){
+          
+          remove_modal_spinner()
+          shinyalert(title = "Your destination address is outside Melbourne CBD", type = "error")
+          
+          
+        }
+        else{
+        journey_distance <- distHaversine(c(end_lng, end_lat), c(start_lng, start_lat))
+        if (journey_distance >20000){
+          remove_modal_spinner()
+          shinyalert(title = "Your origin address is not within a 20 km radius of the CBD", type = "error")
+        }
+        else{
+        public_transport_directions <- directions(origin_reactive(), destination_reactive(), 'transit', departure_hour, 'best_guess')
         df_route_public <- retrieve_route_public(public_transport_directions)
         df_destination <- cbind(
           car_directions$routes$legs[[1]]$end_location,
@@ -320,7 +422,10 @@ server <- function(input, output, session){
         # statistics to print in Dashboard
         parking_occupation <- round(mean(parking_statistics_df[, 'occupation_ratio' ]))
         time_restriction_ratio <- round((nrow(parking_statistics_df[parking_statistics_df$color=='#ECC904', ])/nrow(parking_statistics_df))*100)
-        parking_hourly_cost <- parking_statistics_df[, 'parking_cost'][1]/100
+        parking_hourly_cost <- parking_statistics_df[, 'parking_cost'][1]
+        if(parking_hourly_cost>10){
+          parking_hourly_cost <- parking_hourly_cost/100
+        }
         parking_cost <- parking_cost_calculator(day_reactive(), time_reactive(), parking_hourly_cost, length_of_stay_reactive())
         parking_time <- parking_statistics_df[, 'parking_time'][1]
         parking_distance <- parking_statistics_df[, 'parking_distance'][1]
@@ -332,7 +437,7 @@ server <- function(input, output, session){
         # private vehicle costs
         car_distance = car_directions$routes$legs[[1]]$distance$value
         petrol_cost_per_litre = 1.27
-        avg_fuel_consumption_l_per_km = 0.2
+        avg_fuel_consumption_l_per_km = 0.5
         driving_cost = round((car_distance/1000)*avg_fuel_consumption_l_per_km*petrol_cost_per_litre)
         total_private_cost = driving_cost + parking_cost
         
@@ -363,8 +468,14 @@ server <- function(input, output, session){
           add_circles(data=parking_data_reactive_complete(), lat='mean_lat', lon='mean_long', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information') %>% 
           add_markers(data=df_destination, info_window = "address")
+        map_title <- 'Public vs Private Journey including Historical Parking Availability'
         remove_modal_spinner()
+        }
     }
+        }
+    }
+    if(car_directions$status!='ZERO_RESULTS'& car_directions$status!='NOT_FOUND' & cbd_distance<=1500 & journey_distance <=20000){
+    output$map_title <- renderText(map_title)
     output$show_non_restricted <- renderUI({
       fluidRow(column(6,style="border-radius:8px; background-color: #7E8BFA; border-style:solid; border-color:#b1d1fc; margin: 5px; padding: 10px", div(prettyCheckbox('restrictions_checkbox', 'Show only parkings within time restriction', FALSE), style = "color:white;")))
       })
@@ -378,8 +489,9 @@ server <- function(input, output, session){
     output$time_private <- renderValueBox({valueBox(paste(formatC(total_time_private, format="d", big.mark=','),'min') , HTML(paste('<b>Total Journey Time Private</b><br /><br />', time_steps_private), sep=''), icon = icon("clock"), color = "orange")})
     output$time_public <- renderValueBox({valueBox(paste(formatC(total_time_public, format="d", big.mark=','),'min') , HTML(paste('<b>Total Journey Time Public</b><br /><br />', time_steps_public), sep=''), icon = icon("clock"),color = "green")})
     output$parking_stats <- renderValueBox({valueBox(paste(formatC(parking_occupation, format="d", big.mark=','),'%') , HTML(paste('<b>Occupation ratio</b><br /><br />Parking Time: ', parking_time, 'min<br /><br />Parking Cost: ', parking_cost, '$<br /><br />Time restriction non-availability: ', time_restriction_ratio), '%', sep=''), icon = icon("parking"),color = "purple")})
-    output$cost_private <- renderValueBox({valueBox(paste('$', formatC(total_private_cost, format="d", big.mark=',')) , HTML(paste('<b>Total Journey Cost Private</b><br /><br />Driving Cost: $', driving_cost,'<br />Parking Cost: ', parking_cost), sep=''), icon = icon("dollar-sign"), color = "orange")})
-    output$cost_public <- renderValueBox({valueBox(paste('$', formatC(public_transport_cost, format="d", big.mark=',')) , HTML(paste('<b>Total Journey Cost Public</b><br /><br />', sep='')), icon = icon("dollar-sign"),color = "green")})
+    output$cost_private <- renderValueBox({valueBox(paste('$', total_private_cost) , HTML(paste('<b>Total Journey Cost Private</b><br /><br />Driving Cost: $', driving_cost,'<br />Parking Cost: ', parking_cost), sep=''), icon = icon("dollar-sign"), color = "orange")})
+    output$cost_public <- renderValueBox({valueBox(paste('$', public_transport_cost) , HTML(paste('<b>Total Journey Cost Public</b><br /><br />', sep='')), icon = icon("dollar-sign"),color = "green")})
+    }
     })
   
   observeEvent(input$restrictions_checkbox,{
