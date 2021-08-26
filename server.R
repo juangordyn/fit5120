@@ -10,7 +10,7 @@ library('shinyalert')
 
 api_key<-'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 url_sensor_live <- 'https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json?$limit=20000'
-maximum_stay_cost_df <- read.csv('maximum_stay_cost.csv')
+maximum_stay_cost_df <- read.csv('data/maximum_stay_cost.csv')
 
 retrieve_sensor_live <- function(url){
   request <- GET(url)
@@ -181,19 +181,7 @@ transport_cost_calculator <- function(hour){
   return(public_fare)
 }
 
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
-
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
-
 server <- function(input, output, session){
-  
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
-  
   destination_reactive <- reactiveVal()
   origin_reactive <- reactiveVal()
   max_walk_reactive <- reactiveVal()
@@ -226,11 +214,20 @@ server <- function(input, output, session){
     day_reactive(input$day)
     origin_reactive(input$origin)
     
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
     journey_distance <- 0
+    print(origin_reactive())
+    print(destination_reactive())
     
+    if(origin_reactive()== ''| destination_reactive()==''){
+      shinyalert(title = "Origin and destination cannot be blank", type = "error")
+    }
+    else{
+      
       if(input$leaving=='Now'){
         
         car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', 'now', 'pessimistic')
@@ -425,7 +422,10 @@ server <- function(input, output, session){
         svals <- parking_statistics_df$occupation_ratio/100
         f <- colorRamp(c("#FBF8F8", "#FA4A39"))
         parking_statistics_df$color <- rgb(f(svals)/255)
-        parking_statistics_df[parking_statistics_df$maximum_stay<as.numeric(length_of_stay_reactive()),'color']<-'#ECC904'
+        
+        if(day_reactive()!='Sunday' & ((as.POSIXct(time_reactive(), format='%H:%M')>as.POSIXct('7:30', format='%H:%M')&as.POSIXct(time_reactive(), format ='%H:%M')<as.POSIXct('18:30', format='%H:%M')))){
+        parking_statistics_df[parking_statistics_df$maximum_stay<as.numeric(length_of_stay_reactive()),'color']<-'#ECC904'}
+        
         parking_data_reactive_complete(parking_statistics_df)
         parking_data_reactive_incomplete(parking_statistics_df[parking_statistics_df$color!='#ECC904', ])
         
@@ -501,6 +501,7 @@ server <- function(input, output, session){
     output$parking_stats <- renderValueBox({valueBox(paste(formatC(parking_occupation, format="d", big.mark=','),'%') , HTML(paste('<b>Occupation ratio</b><br /><br />Parking Time: ', parking_time, 'min<br /><br />Parking Cost: ', parking_cost, '$<br /><br />Time restriction non-availability: ', time_restriction_ratio), '%', sep=''), icon = icon("parking"),color = "purple")})
     output$cost_private <- renderValueBox({valueBox(paste('$', total_private_cost) , HTML(paste('<b>Total Journey Cost Private</b><br /><br />Driving Cost: $', driving_cost,'<br />Parking Cost: ', parking_cost), sep=''), icon = icon("dollar-sign"), color = "orange")})
     output$cost_public <- renderValueBox({valueBox(paste('$', public_transport_cost) , HTML(paste('<b>Total Journey Cost Public</b><br /><br />', sep='')), icon = icon("dollar-sign"),color = "green")})
+    }
     }
     })
   
