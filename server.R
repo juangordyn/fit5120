@@ -8,9 +8,9 @@ library('lubridate')
 library('shinybusy')
 library('shinyalert')
 
-api_key<-''
+api_key<-'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 url_sensor_live <- 'https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json?$limit=20000'
-maximum_stay_cost_df <- read.csv('maximum_stay_cost.csv')
+maximum_stay_cost_df <- read.csv('data/maximum_stay_cost.csv')
 
 retrieve_sensor_live <- function(url){
   request <- GET(url)
