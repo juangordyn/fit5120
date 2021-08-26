@@ -181,11 +181,11 @@ transport_cost_calculator <- function(hour){
   return(public_fare)
 }
 
-VIRTUALENV_NAME = '/home/ubuntu/env_2'
+VIRTUALENV_NAME = '/home/ubuntu/env'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3.7')
+Sys.setenv(PYTHON_PATH = '/usr/bin/python3.8')
 Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3.7'))
+Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3.8'))
 
 server <- function(input, output, session){
   
