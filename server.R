@@ -214,9 +214,18 @@ server <- function(input, output, session){
     day_reactive(input$day)
     origin_reactive(input$origin)
     
-    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
-    reticulate::source_python("python_helper_functions.py")
+VIRTUALENV_NAME = '/home/ubuntu/env_2'
+
+Sys.setenv(PYTHON_PATH = '/usr/bin/python3.7')
+Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/')) # include '/' => installs into rstudio-connect/apps/
+Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3.7'))
+
+server<-function(input, output, session) {
+  
+  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  python_path = Sys.getenv('PYTHON_PATH')
+  reticulate::use_python(python_path)
+  reticulate::use_virtualenv(virtualenv_dir, required = T)
     
     cbd_distance <- 0
     journey_distance <- 0
