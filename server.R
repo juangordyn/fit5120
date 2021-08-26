@@ -181,7 +181,18 @@ transport_cost_calculator <- function(hour){
   return(public_fare)
 }
 
+VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+
+Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+
 server <- function(input, output, session){
+  
+  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  python_path = Sys.getenv('PYTHON_PATH')
+  reticulate::use_python(python_path)
+  reticulate::use_virtualenv(virtualenv_dir, required = T)
   destination_reactive <- reactiveVal()
   origin_reactive <- reactiveVal()
   max_walk_reactive <- reactiveVal()
@@ -214,9 +225,7 @@ server <- function(input, output, session){
     day_reactive(input$day)
     origin_reactive(input$origin)
     
-    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
-    reticulate::source_python("python_helper_functions copy.py")
+    reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
     journey_distance <- 0
