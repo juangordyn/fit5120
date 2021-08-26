@@ -4,8 +4,21 @@ library(googleway)
 library(shinythemes)
 library(shinyWidgets)
 library(shinyalert)
+library(lubridate)
 
 key <- 'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
+
+day_of_week <- wday(Sys.time())
+days_of_week <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')
+day_of_week <- days_of_week[day_of_week]
+
+hours <- c()
+for(i in 0:23){
+  hour <- paste(i, ':00', sep='')
+  hours<-c(hours, hour)
+}
+
+hour_now <- paste(as.character(hour(Sys.time())),":00", sep='')
 
 ui <- dashboardPage(
   dashboardHeader(      title = "Compare public transport and car journeys",
@@ -42,14 +55,14 @@ ui <- dashboardPage(
                       br(),
                       br(),
                       textInput(inputId = "origin", label = "Origin", value = ''),
-                       textInput(inputId = "destination", label = "Destination", value = ''),
-                       sliderInput(inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =30, step=30),
-                      prettyRadioButtons(inputId="leaving", label="Leaving", choices=c("Now","Selected Time & Day")),
-                       conditionalPanel(condition = "input.leaving == 'Selected Time & Day'",
-                       selectInput(inputId = "day", label = "Day", choices = c('Monday','Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')),
-                       textInput(inputId = "hour", label = "Hour", value = '19:00')),
-                        br(),
-                       actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),
+                      textInput(inputId = "destination", label = "Destination", value = ''),
+                      sliderInput(inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =30, step=30),
+                      prettyRadioButtons(inputId="leaving", label="Leaving", choices=c("Now","Selected Time & Day"), selected ="Selected Time & Day"),
+                      conditionalPanel(condition = "input.leaving == 'Selected Time & Day'",
+                      selectInput(inputId = "day", label = "Day", choices = c('Monday','Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), selected = day_of_week),
+                      selectInput(inputId = "hour", label = "Hour", choices = hours, selected= hour_now)),
+                      br(),
+                      actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),
   dashboardBody(HTML(paste0(" <script> 
                 function initAutocomplete() {
 
