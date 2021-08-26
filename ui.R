@@ -6,6 +6,8 @@ library(shinythemes)
 library(shinyWidgets)
 library(shinyalert)
 
+
+options(shiny.sanitize.errors = FALSE)
 key <- 'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 
 ui <- dashboardPage(
