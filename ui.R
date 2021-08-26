@@ -4,6 +4,7 @@ library(googleway)
 library(shinyTime)
 library(shinythemes)
 library(shinyWidgets)
+library(shinyalert)
 
 key <- 'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 
@@ -34,22 +35,26 @@ ui <- dashboardPage(
                                 }
                                 .small-box .icon-large {top: 5px;
                                 }
-                                                  "))),width=300,    
-                      textInput(inputId = "origin", label = "Origin", value = '416 St Kilda Rd, Melbourne Victoria'),
-                       textInput(inputId = "destination", label = "Destination", value = 'Department of Agriculture, La Trobe St, Melbourne VIC 3000'),
-                       textInput(inputId = "length_of_stay", label = "Length of stay (minutes)", value = '45'),
-                       textInput(inputId = "max_walk", label = "Max walk (mts)", '800'),
-                       # fluidRow(column(3,'Leaving'), column(2, checkboxInput(inputId = "live", label = "Now")), column(1,''), column(2,checkboxInput(inputId = "selected_hd", label = "Select Time & Day"))),
+                                .js-irs-0 .irs-single, .js-irs-0 .irs-bar-edge, .js-irs-0 .irs-bar {background: #E56B76}
+                                                  "))),width=350,
+                                
+                      br(),
+                      img(src = 'jamsnot_logo.png'),
+                      br(),
+                      br(),
+                      textInput(inputId = "origin", label = "Origin", value = ''),
+                       textInput(inputId = "destination", label = "Destination", value = ''),
+                       sliderInput(inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =30, step=30),
                       prettyRadioButtons(inputId="leaving", label="Leaving", choices=c("Now","Selected Time & Day")),
                        conditionalPanel(condition = "input.leaving == 'Selected Time & Day'",
-                       textInput(inputId = "day", label = "Day", value = 'Friday'),
+                       selectInput(inputId = "day", label = "Day", choices = c('Monday','Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')),
                        textInput(inputId = "hour", label = "Hour", value = '19:00')),
                         br(),
                        actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),
   dashboardBody(HTML(paste0(" <script> 
                 function initAutocomplete() {
 
-                var autocomplete = new google.maps.places.Autocomplete(document.getElementById('origin'),{types: ['geocode']});
+                var autocomplete = new google.maps.places.Autocomplete(document.getElementById('destination'),{types: ['geocode']});
                 autocomplete.setFields(['address_components', 'formatted_address',  'geometry', 'icon', 'name']);
                 autocomplete.addListener('place_changed', function() {
                 var place = autocomplete.getPlace();
@@ -81,7 +86,9 @@ ui <- dashboardPage(
                 Shiny.onInputChange('jsValueCoords', coords);});}
                 </script> 
                 <script src='https://maps.googleapis.com/maps/api/js?key=", key,"&libraries=places&callback=initAutocomplete' async defer></script>")),
-                
+    
+    useShinyalert(),           
+    strong(htmlOutput("map_title")),           
     google_mapOutput("myMap"),
     uiOutput("show_non_restricted"),
     br(),
