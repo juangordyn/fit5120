@@ -1,3 +1,4 @@
+# wrangling function to be able to calculate average coordenates of the given polygons for the parking bays
 def wrangle_polygon():
     all_sensors_coord = all_sensors_df
     for i in range(0, len(all_sensors_df)):
@@ -21,6 +22,8 @@ def wrangle_polygon():
     all_sensors_coord['location'] = list(zip(all_sensors_coord.mean_lat, all_sensors_coord.mean_long))
     return all_sensors_coord
 
+# wrangling function to connect the different datasets using attributes they have in common. We store the result to use it within our Shiny App. To do it while
+# the app is running would take a lot of time.
 def wrangle_cost_stay():
     street_segments = pd.read_csv('street_segments.csv')
     street_segments = street_segments.rename(columns = {'street_segment_id':'rd_seg_id'})
