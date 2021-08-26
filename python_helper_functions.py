@@ -185,7 +185,7 @@ def calculate_parking_statistics(dest_lat, dest_lng, length_of_stay, max_walk, h
     all_sensors_df = pd.read_csv('all_sensors_df.csv')
     query_results = query_statistics(all_sensors_df, dest_lat, dest_lng, length_of_stay, max_walk, hour, day_of_week)
     parking_statistics_df = retrieve_final_statistics(retrieve_occupation_vacancy_time(query_results))
-    maximum_stay_cost = pd.read_csv('data/maximum_stay_cost.csv')
+    maximum_stay_cost = pd.read_csv('maximum_stay_cost.csv')
     new_df = pd.merge(all_sensors_df, parking_statistics_df, on='marker_id')
     new_df = pd.merge(new_df, maximum_stay_cost, on='marker_id', how='left').drop_duplicates()
     new_df['occupation_ratio'] = new_df['occupation_ratio'].fillna(np.mean(new_df.occupation_ratio))
