@@ -6,6 +6,8 @@ library(shinyWidgets)
 library(shinyalert)
 library(lubridate)
 
+options(shiny.sanitize.errors = FALSE)
+
 key <- 'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 
 day_of_week <- wday(Sys.time())
