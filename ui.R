@@ -10,7 +10,7 @@ options(shiny.sanitize.errors = FALSE)
 
 key <- 'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 
-day_of_week <- wday(Sys.time())
+day_of_week <- wday(with_tz(Sys.time(), 'Australia/Melbourne'))
 days_of_week <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')
 day_of_week <- days_of_week[day_of_week]
 
@@ -20,7 +20,7 @@ for(i in 0:23){
   hours<-c(hours, hour)
 }
 
-hour_now <- paste(as.character(hour(Sys.time())),":00", sep='')
+hour_now <- paste(as.character(hour(with_tz(Sys.time(), 'Australia/Melbourne'))),":00", sep='')
 
 ui <- dashboardPage(
   dashboardHeader(      title = "Compare public transport and car journeys",
