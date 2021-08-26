@@ -5,6 +5,11 @@ import json
 import requests
 import math
 
+
+"""
+Helper Function to calculate Haversine Distance between parking bays and final destination to be able to order them and subset them accordingly
+
+"""
 def distance_calc_helper(lat1, lon1, destination):
     lat2, lon2 = destination
     radius = 6378 # km
@@ -17,7 +22,11 @@ def distance_calc_helper(lat1, lon1, destination):
     d = radius * c
 
     return d*1000
+"""
 
+Distance calculation function
+
+"""
 def distance_calculation(data, lat1, lon1):
     distance_list =[]
     for location in data.location:
