@@ -26,7 +26,7 @@ def distance_calculation(data, lat1, lon1):
     return data
 
 def parking_locations_stay_cost(all_sensors_df):
-    maximum_stay_cost = pd.read_csv('maximum_stay_cost.csv')
+    maximum_stay_cost = pd.read_csv('data/maximum_stay_cost.csv')
     parking_locations_stay_cost_df = pd.merge(all_sensors_df, maximum_stay_cost, on = 'marker_id', how = 'left').drop_duplicates()
     return parking_locations_stay_cost_df
 
@@ -85,6 +85,12 @@ def retrieve_occupation_vacancy_time(query_result):
             continue
         j+=1
     return occupation_vacancy_statistics
+
+def retrieve_final_statistics(parking_statistics_df):
+    parking_statistics_df['occupation_ratio'] = parking_statistics_df['occupation_ratio']
+    parking_statistics_df['occupation_ratio'] = parking_statistics_df['occupation_ratio'].apply(lambda x: 99.99 if x>100 else x)
+    parking_statistics_df['avg_vacancy'] = parking_statistics_df['avg_vacancy']
+    return parking_statistics_df
 
 def text_hover_over(new_df):
     for i in range(len(new_df)):
@@ -167,10 +173,10 @@ def parking_simulation_funct(parking_statistics_df_complete, length_of_stay):
     return parking_statistics_df_complete
 
 def calculate_parking_statistics(dest_lat, dest_lng, length_of_stay, max_walk, hour, day_of_week):
-    all_sensors_df = pd.read_csv('all_sensors_df.csv')
+    all_sensors_df = pd.read_csv('data/all_sensors_df.csv')
     query_results = query_statistics(all_sensors_df, dest_lat, dest_lng, length_of_stay, max_walk, hour, day_of_week)
-    parking_statistics_df = retrieve_occupation_vacancy_time(query_results)
-    maximum_stay_cost = pd.read_csv('maximum_stay_cost.csv')
+    parking_statistics_df = retrieve_final_statistics(retrieve_occupation_vacancy_time(query_results))
+    maximum_stay_cost = pd.read_csv('data/maximum_stay_cost.csv')
     new_df = pd.merge(all_sensors_df, parking_statistics_df, on='marker_id')
     new_df = pd.merge(new_df, maximum_stay_cost, on='marker_id', how='left').drop_duplicates()
     new_df['occupation_ratio'] = new_df['occupation_ratio'].fillna(np.mean(new_df.occupation_ratio))
