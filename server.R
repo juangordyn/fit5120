@@ -181,11 +181,11 @@ transport_cost_calculator <- function(hour){
   return(public_fare)
 }
 
-VIRTUALENV_NAME = '/home/ubuntu/.local/share/r-miniconda/envs/r-reticulate'
+VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/home/ubuntu/.local/share/r-miniconda/envs/r-reticulate/lib/python3.6')
+Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
 Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/lib/python3.6'))
+Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   
