@@ -131,7 +131,7 @@ def parking_simulation_funct(parking_statistics_df_complete, length_of_stay):
         time_results = []
         distance_results = []
         parking_cost_results = []
-        car_speed = 3
+        car_speed = 15
         walk_speed = 5
         parking_cost = (parking_statistics_df.loc[0, 'cost_per_hour'])/100
         distance_to_dest = (parking_statistics_df.loc[0, 'dist'])/1000
