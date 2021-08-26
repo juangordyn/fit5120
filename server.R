@@ -181,7 +181,19 @@ transport_cost_calculator <- function(hour){
   return(public_fare)
 }
 
+VIRTUALENV_NAME = '/home/ubuntu/env_2'
+
+Sys.setenv(PYTHON_PATH = '/usr/bin/python3.7')
+Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3.7'))
+
 server <- function(input, output, session){
+  
+  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  python_path = Sys.getenv('PYTHON_PATH')
+  reticulate::use_python(python_path)
+  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  
   destination_reactive <- reactiveVal()
   origin_reactive <- reactiveVal()
   max_walk_reactive <- reactiveVal()
