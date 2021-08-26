@@ -1,6 +1,7 @@
 library(shiny)
 library(shinydashboard)
 library(googleway)
+library(shinyTime)
 library(shinythemes)
 library(shinyWidgets)
 library(shinyalert)
@@ -35,7 +36,7 @@ ui <- dashboardPage(
                                 .small-box .icon-large {top: 5px;
                                 }
                                 .js-irs-0 .irs-single, .js-irs-0 .irs-bar-edge, .js-irs-0 .irs-bar {background: #E56B76}
-                                                  "))),width=350,
+                                                  "))),width=325,
                                 
                       br(),
                       img(src = 'jamsnot_logo.png'),
