@@ -226,8 +226,6 @@ server <- function(input, output, session){
     day_reactive(input$day)
     origin_reactive(input$origin)
     
-    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
