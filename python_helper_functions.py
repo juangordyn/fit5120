@@ -26,7 +26,7 @@ def distance_calculation(data, lat1, lon1):
     return data
 
 def parking_locations_stay_cost(all_sensors_df):
-    maximum_stay_cost = pd.read_csv('data/maximum_stay_cost.csv')
+    maximum_stay_cost = pd.read_csv('maximum_stay_cost.csv')
     parking_locations_stay_cost_df = pd.merge(all_sensors_df, maximum_stay_cost, on = 'marker_id', how = 'left').drop_duplicates()
     return parking_locations_stay_cost_df
 
@@ -107,9 +107,12 @@ def text_hover_over(new_df):
             avg_occupation) + "<br />Maximum stay (min): " + str(maximum_stay) + "<br />Hourly Cost ($): " + str(cost_per_hour / 100)
     return new_df
 
-def parking_simulation_funct(parking_statistics_df_complete, length_of_stay):
+def parking_simulation_funct(parking_statistics_df_complete, length_of_stay, day_of_week, hour):
     parking_statistics_df_complete = parking_statistics_df_complete.sort_values(by='dist')
-    parking_statistics_df = parking_statistics_df_complete[parking_statistics_df_complete.maximum_stay>=length_of_stay].reset_index(drop=True)
+    if day_of_week != 'Sunday' and(datetime.strptime(hour, '%H:%M') > datetime.strptime('7:30', '%H:%M')) and (datetime.strptime(hour, '%H:%M') < datetime.strptime('18:30', '%H:%M')):
+        parking_statistics_df = parking_statistics_df_complete[parking_statistics_df_complete.maximum_stay>=length_of_stay].reset_index(drop=True)
+    else:
+        parking_statistics_df = parking_statistics_df_complete
     if len(parking_statistics_df)==0:
         parking_statistics_df = parking_statistics_df_complete
         parking_time = 15
@@ -122,7 +125,7 @@ def parking_simulation_funct(parking_statistics_df_complete, length_of_stay):
         time_results = []
         distance_results = []
         parking_cost_results = []
-        car_speed = 3
+        car_speed = 10
         walk_speed = 5
         parking_cost = (parking_statistics_df.loc[0, 'cost_per_hour'])/100
         distance_to_dest = (parking_statistics_df.loc[0, 'dist'])/1000
@@ -173,17 +176,17 @@ def parking_simulation_funct(parking_statistics_df_complete, length_of_stay):
     return parking_statistics_df_complete
 
 def calculate_parking_statistics(dest_lat, dest_lng, length_of_stay, max_walk, hour, day_of_week):
-    all_sensors_df = pd.read_csv('data/all_sensors_df.csv')
+    all_sensors_df = pd.read_csv('all_sensors_df.csv')
     query_results = query_statistics(all_sensors_df, dest_lat, dest_lng, length_of_stay, max_walk, hour, day_of_week)
     parking_statistics_df = retrieve_final_statistics(retrieve_occupation_vacancy_time(query_results))
-    maximum_stay_cost = pd.read_csv('data/maximum_stay_cost.csv')
+    maximum_stay_cost = pd.read_csv('maximum_stay_cost.csv')
     new_df = pd.merge(all_sensors_df, parking_statistics_df, on='marker_id')
     new_df = pd.merge(new_df, maximum_stay_cost, on='marker_id', how='left').drop_duplicates()
     new_df['occupation_ratio'] = new_df['occupation_ratio'].fillna(np.mean(new_df.occupation_ratio))
     new_df['avg_vacancy'] = new_df['avg_vacancy'].fillna(np.mean(new_df.avg_vacancy))
     new_df['avg_occupation'] = new_df['avg_occupation'].fillna(np.mean(new_df.avg_occupation))
     new_df = new_df.reset_index(drop=True)
-    new_df = parking_simulation_funct(new_df, length_of_stay)
+    new_df = parking_simulation_funct(new_df, length_of_stay, day_of_week, hour)
     new_df = text_hover_over(new_df).reset_index(drop=True)
     return new_df
 
@@ -197,4 +200,4 @@ def calculate_parking_statistics_live(marker_ids, hour, day_of_week):
 
 
 
-# calculate_parking_statistics(-37.8103, 144.9614, 110, 800, '19:00', 'Friday').to_csv('parking_statistics.csv', index=False)
+# calculate_parking_statistics(-37.8103, 144.9614, 110, 800, '02:00', 'Friday').to_csv('parking_statistics.csv', index=False)
