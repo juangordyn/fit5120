@@ -1,7 +1,6 @@
 library(shiny)
 library(shinydashboard)
 library(googleway)
-library(shinyTime)
 library(shinythemes)
 library(shinyWidgets)
 library(shinyalert)
