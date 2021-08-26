@@ -35,7 +35,7 @@ def distance_calculation(data, lat1, lon1):
     return data
 
 def parking_locations_stay_cost(all_sensors_df):
-    maximum_stay_cost = pd.read_csv('data/maximum_stay_cost.csv')
+    maximum_stay_cost = pd.read_csv('maximum_stay_cost.csv')
     parking_locations_stay_cost_df = pd.merge(all_sensors_df, maximum_stay_cost, on = 'marker_id', how = 'left').drop_duplicates()
     return parking_locations_stay_cost_df
 
