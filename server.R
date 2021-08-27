@@ -226,7 +226,7 @@ server <- function(input, output, session){
     day_reactive(input$day)
     origin_reactive(input$origin)
     
-    reticulate::source_python("data/python_helper_functions.py")
+    reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
     journey_distance <- 0
