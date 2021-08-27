@@ -8,7 +8,14 @@ library(lubridate)
 
 options(shiny.sanitize.errors = FALSE)
 
-key <- 'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
+key <- ''
+
+"""
+Script showing the User Interface part of the Shiny app
+
+"""
+
+# to display days an hour in input
 
 day_of_week <- wday(with_tz(Sys.time(), 'Australia/Melbourne'))
 days_of_week <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')
@@ -21,6 +28,8 @@ for(i in 0:23){
 }
 
 hour_now <- paste(as.character(hour(with_tz(Sys.time(), 'Australia/Melbourne'))),":00", sep='')
+
+# Initializing dashboard panels and styling them with CSS
 
 ui <- dashboardPage(
   dashboardHeader(      title = "Compare public transport and car journeys",
@@ -65,6 +74,9 @@ ui <- dashboardPage(
                       selectInput(inputId = "hour", label = "Hour", choices = hours, selected= hour_now)),
                       br(),
                       actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),
+  
+  # Custom JavaScript to allow places autocomplete
+  
   dashboardBody(HTML(paste0(" <script> 
                 function initAutocomplete() {
 
@@ -101,6 +113,7 @@ ui <- dashboardPage(
                 </script> 
                 <script src='https://maps.googleapis.com/maps/api/js?key=", key,"&libraries=places&callback=initAutocomplete' async defer></script>")),
     
+    # all the output elements
     useShinyalert(),           
     strong(htmlOutput("map_title")),           
     google_mapOutput("myMap"),
