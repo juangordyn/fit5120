@@ -10,7 +10,7 @@ library('shinyalert')
 
 api_key<-'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 url_sensor_live <- 'https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json?$limit=20000'
-maximum_stay_cost_df <- read.csv('maximum_stay_cost.csv')
+maximum_stay_cost_df <- read.csv('data/maximum_stay_cost.csv')
 
 retrieve_sensor_live <- function(url){
   request <- GET(url)
@@ -181,18 +181,7 @@ transport_cost_calculator <- function(hour){
   return(public_fare)
 }
 
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
-
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
-
 server <- function(input, output, session){
-  
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
   destination_reactive <- reactiveVal()
   origin_reactive <- reactiveVal()
   max_walk_reactive <- reactiveVal()
@@ -225,7 +214,9 @@ server <- function(input, output, session){
     day_reactive(input$day)
     origin_reactive(input$origin)
     
-    reticulate::source_python("python_helper_functions.py")
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    reticulate::source_python("data/python_helper_functions.py")
     
     cbd_distance <- 0
     journey_distance <- 0
@@ -371,23 +362,9 @@ server <- function(input, output, session){
       }
       }
     else{
+        car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', "now", 'pessimistic')
         
-          days_of_week <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')
-          today_dow <- wday(with_tz(Sys.time(), 'Australia/Melbourne'))
-          input_dow <- match(input$day, days_of_week)
-          difference <- abs(input_dow - today_dow)
-          if (difference!=0){
-            departure_hour <- as.POSIXct(input$hour, format ='%H:%M') + days(difference)
-          }
-          else{
-            if(with_tz(Sys.time(), 'Australia/Melbourne')>as.POSIXct(input$hour, format ='%H:%M')){
-            departure_hour <- as.POSIXct(input$hour, format ='%H:%M') + days(7)}
-            else{
-              departure_time <- as.POSIXct(input$hour, format ='%H:%M')
-            }
-          }
-        car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', departure_hour, 'pessimistic')
-        
+        print(car_directions$status)
         if(car_directions$status=='ZERO_RESULTS'|car_directions$status=='NOT FOUND'){
           shinyalert(title = "Please check your input adresses", type = "error")
         }
@@ -419,7 +396,7 @@ server <- function(input, output, session){
           shinyalert(title = "Your origin address is not within a 20 km radius of the CBD", type = "error")
         }
         else{
-        public_transport_directions <- directions(origin_reactive(), destination_reactive(), 'transit', departure_hour, 'best_guess')
+        public_transport_directions <- directions(origin_reactive(), destination_reactive(), 'transit', "now", 'best_guess')
         df_route_public <- retrieve_route_public(public_transport_directions)
         df_destination <- cbind(
           car_directions$routes$legs[[1]]$end_location,
