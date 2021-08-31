@@ -38,6 +38,7 @@ def distance_calculation(data, lat1, lon1):
     return data
 
 """
+
 Function to get parking cost in our parking data
 
 """
@@ -47,6 +48,7 @@ def parking_locations_stay_cost(all_sensors_df):
     return parking_locations_stay_cost_df
 
 """
+
 Function to query historical parking data from SODA data base, being able to aggregate and filter right from the query using SoSQL
 
 """
@@ -73,6 +75,7 @@ def query_statistics(all_sensors_df, destination_lat, destination_long, length_o
     return[query_response]
 
 """
+
 Same as above but for Live sensor data
 
 """
@@ -84,6 +87,7 @@ def query_statistics_live(marker_ids, time, dayofweek):
     average_occupation = json.loads(requests.get(url2).content)
     return[average_occupation]
 """
+
 Function to calculate occupation and vacancy times, given the data queried in the above functions
 
 """
@@ -107,13 +111,19 @@ def retrieve_occupation_vacancy_time(query_result):
                 occupation_minutes = int(sum_statistic)
                 occupation_vacancy_statistics.loc[j, 'avg_occupation'] = round(float(statistic),2)
         try:
-            occupation_vacancy_statistics.loc[j,'occupation_ratio'] = round((occupation_minutes/total_minutes)*100)
+            occupation_ratio = round((occupation_minutes/total_minutes)*100)
+            if occupation_ratio > 100:
+                occupation_ratio = 100
+            elif occupation_ratio < 0:
+                occupation_ratio = 0
+            occupation_vacancy_statistics.loc[j,'occupation_ratio'] = occupation_ratio
         except:
             continue
         j+=1
     return occupation_vacancy_statistics
 
 """
+
 Function to create the string that will pop up when hovering each sensor
 
 """
@@ -133,6 +143,7 @@ def text_hover_over(new_df):
     return new_df
 
 """
+
 Function to perform parking simulation:
 1) We order the parkings in ascendent distance.
 2) We randomly initialize their states as occupied or unoccupied using the Occupation ratio as probability of being occupied.
@@ -145,10 +156,13 @@ time to transition from occupied to free.
 
 """
 
-def parking_simulation_funct(parking_statistics_df_complete, length_of_stay):
+def parking_simulation_funct(parking_statistics_df_complete, length_of_stay, day_of_week, hour):
     parking_statistics_df_complete = parking_statistics_df_complete.sort_values(by='dist')
-    parking_statistics_df = parking_statistics_df_complete[parking_statistics_df_complete.maximum_stay>=length_of_stay].reset_index(drop=True)
-    if len(parking_statistics_df)==0:
+    if day_of_week != 'Sunday' and(datetime.strptime(hour, '%H:%M') > datetime.strptime('7:30', '%H:%M')) and (datetime.strptime(hour, '%H:%M') < datetime.strptime('18:30', '%H:%M')):
+        parking_statistics_df = parking_statistics_df_complete[parking_statistics_df_complete.maximum_stay>=length_of_stay].reset_index(drop=True)
+    else:
+        parking_statistics_df = parking_statistics_df_complete
+    if len(parking_statistics_df)<10:
         parking_statistics_df = parking_statistics_df_complete
         parking_time = 15
     else:
@@ -156,7 +170,7 @@ def parking_simulation_funct(parking_statistics_df_complete, length_of_stay):
     for j in range(100):
         parking_simulation = []
         for occupation_ratio in parking_statistics_df.occupation_ratio:
-            parking_simulation.append(np.random.choice(2, 1, p=[occupation_ratio/100, 1- occupation_ratio/100])[0])
+            parking_simulation.append(np.random.choice(2, 1, p=[occupation_ratio/100, 1 - occupation_ratio/100])[0])
         time_results = []
         distance_results = []
         parking_cost_results = []
@@ -210,30 +224,35 @@ def parking_simulation_funct(parking_statistics_df_complete, length_of_stay):
     parking_statistics_df_complete['walking_time'] = round(walk_time)
     return parking_statistics_df_complete
 """
+
 Function to calculate statistics for historical data
 
 """
 def calculate_parking_statistics(dest_lat, dest_lng, length_of_stay, max_walk, hour, day_of_week):
-    all_sensors_df = pd.read_csv('all_sensors_df.csv')
-    query_results = query_statistics(all_sensors_df, dest_lat, dest_lng, length_of_stay, max_walk, hour, day_of_week)
-    parking_statistics_df = retrieve_final_statistics(retrieve_occupation_vacancy_time(query_results))
-    maximum_stay_cost = pd.read_csv('maximum_stay_cost.csv')
-    new_df = pd.merge(all_sensors_df, parking_statistics_df, on='marker_id')
-    new_df = pd.merge(new_df, maximum_stay_cost, on='marker_id', how='left').drop_duplicates()
-    new_df['occupation_ratio'] = new_df['occupation_ratio'].fillna(np.mean(new_df.occupation_ratio))
-    new_df['avg_vacancy'] = new_df['avg_vacancy'].fillna(np.mean(new_df.avg_vacancy))
-    new_df['avg_occupation'] = new_df['avg_occupation'].fillna(np.mean(new_df.avg_occupation))
-    new_df = new_df.reset_index(drop=True)
-    new_df = parking_simulation_funct(new_df, length_of_stay)
-    new_df = text_hover_over(new_df).reset_index(drop=True)
-    return new_df
+    try:
+        all_sensors_df = pd.read_csv('all_sensors_df.csv')
+        query_results = query_statistics(all_sensors_df, dest_lat, dest_lng, length_of_stay, max_walk, hour, day_of_week)
+        parking_statistics_df = retrieve_occupation_vacancy_time(query_results)
+        maximum_stay_cost = pd.read_csv('maximum_stay_cost.csv')
+        new_df = pd.merge(all_sensors_df, parking_statistics_df, on='marker_id')
+        new_df = pd.merge(new_df, maximum_stay_cost, on='marker_id', how='left').drop_duplicates()
+        new_df['occupation_ratio'] = new_df['occupation_ratio'].fillna(np.mean(new_df.occupation_ratio))
+        new_df['avg_vacancy'] = new_df['avg_vacancy'].fillna(np.mean(new_df.avg_vacancy))
+        new_df['avg_occupation'] = new_df['avg_occupation'].fillna(np.mean(new_df.avg_occupation))
+        new_df = new_df.reset_index(drop=True)
+        new_df = parking_simulation_funct(new_df, length_of_stay, day_of_week, hour)
+        new_df = text_hover_over(new_df).reset_index(drop=True)
+        return new_df
+    except:
+        return 'No results'
 """
+
 Function to calculate statistics for live data
 
 """
 def calculate_parking_statistics_live(marker_ids, hour, day_of_week):
     query_results = query_statistics_live(marker_ids, hour, day_of_week)
-    parking_statistics_df = retrieve_final_statistics(retrieve_occupation_vacancy_time(query_results))
+    parking_statistics_df = retrieve_occupation_vacancy_time(query_results)
     parking_statistics_df['occupation_ratio'] = parking_statistics_df['occupation_ratio'].fillna(np.mean(parking_statistics_df.occupation_ratio))
     parking_statistics_df['avg_vacancy'] = parking_statistics_df['avg_vacancy'].fillna(np.mean(parking_statistics_df.avg_vacancy))
     parking_statistics_df['avg_occupation'] = parking_statistics_df['avg_occupation'].fillna(np.mean(parking_statistics_df.avg_occupation))
@@ -241,4 +260,4 @@ def calculate_parking_statistics_live(marker_ids, hour, day_of_week):
 
 
 
-# calculate_parking_statistics(-37.8103, 144.9614, 110, 800, '19:00', 'Friday').to_csv('parking_statistics.csv', index=False)
+# calculate_parking_statistics(-37.80995, 144.9626, 180, 400, '9:00', 'Tuesday')
