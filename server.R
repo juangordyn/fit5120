@@ -355,9 +355,7 @@ server <- function(input, output, session){
           data.frame(address = car_directions$routes$legs[[1]]$end_address))
         
          # mixing parking data with journey results
-        print('tuvieja1')
         sensor_live_df <- wrangle_sensor_live_data(max_walk_reactive(), length_of_stay_reactive(), end_lng, end_lat)
-        print(sensor_live_df)
         if(sensor_live_df=='No results'){
           remove_modal_spinner()
           shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
@@ -383,8 +381,6 @@ server <- function(input, output, session){
           shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
         }
         else{
-          print('tu vieja2')
-        print(parking_statistics_df)
         sensor_live_df <- merge(x=sensor_live_df, y=parking_statistics_df, by = 'marker_id')
         
         if(nrow(sensor_live_df)==0){
@@ -396,13 +392,11 @@ server <- function(input, output, session){
         else{
         sensor_live_df$avg_vacancy <- round(sensor_live_df$avg_vacancy)
         sensor_live_df$avg_occupation <- round(sensor_live_df$avg_occupation)
-        print(sensor_live_df)
         
         for(i in 1:nrow(sensor_live_df)){
           vehiclepresent <- sensor_live_df[i, 'status']
           hover_text <- sensor_live_df[i, 'hover_over']
           if(vehiclepresent=='Occupied'){
-            print(vehiclepresent)
             occupation_time <- sensor_live_df[i, 'avg_occupation']
             sensor_live_df[i, 'hover_over'] <- paste(hover_text, '<br />Avg. occupation (minutes): ', occupation_time, sep='')
           }
@@ -412,11 +406,8 @@ server <- function(input, output, session){
           }
           
         }
-        
-        print('tuvieja3')
         parking_data_reactive_complete(sensor_live_df)
         parking_data_reactive_incomplete(sensor_live_df[sensor_live_df$color!='#ECC904', ])
-        print('tuvieja4')
         # statistics to print in Dashboard
         parking_occupation <- round(mean(sensor_live_df[, 'occupation_ratio' ]))
         parking_occupation_reactive(parking_occupation)
@@ -439,7 +430,6 @@ server <- function(input, output, session){
         total_time_private_reactive(total_time_private)
         total_time_public <- round(sum(public_transport_directions$routes$legs[[1]]$steps[[1]]$duration$value)/60)
         total_time_public_reactive(total_time_public)
-        print('tuvieja5')
         # private vehicle costs
         car_distance = car_directions$routes$legs[[1]]$distance$value
         petrol_cost_per_litre = 1.27
@@ -461,7 +451,6 @@ server <- function(input, output, session){
         time_steps_public_short <-df_route_public[, 'polyline_hover_short'][1]
         public_steps_long(time_steps_public)
         public_steps_short(time_steps_public_short)
-       print('tuvieja6')
        # google map displaying live parking data and routes
       google_map_update(map_id = "myMap") %>% 
         clear_polylines() %>% clear_circles %>% clear_markers %>% 
@@ -696,7 +685,6 @@ server <- function(input, output, session){
     
     else{
       if(input$leaving=='Now'){
-        print('tuvieja3')
         google_map_update(map_id = "myMap") %>% clear_circles %>%
           add_circles(data=parking_data_reactive_complete(), lat='lat', lon='lon', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_over', mouse_over = 'hover_over',
