@@ -8,12 +8,9 @@ library(lubridate)
 
 options(shiny.sanitize.errors = FALSE)
 
-key <- ''
+key <- 'AIzaSyD36r0dBXmooQ2cSEdI88-U7VOFMYOfLlU'
 
-"""
-Script showing the User Interface part of the Shiny app
-
-"""
+# Script showing the User Interface part of the Shiny app
 
 # to display days an hour in input
 
@@ -65,54 +62,56 @@ ui <- dashboardPage(
                       img(src = 'jamsnot_logo.png'),
                       br(),
                       br(),
-                      textInput(inputId = "origin", label = "Origin", value = ''),
-                      textInput(inputId = "destination", label = "Destination", value = ''),
+                      textInput(inputId = "origin", label = "Origin", value = '', placeholder='Input a location within 20 km of the CBD...'),
+                      textInput(inputId = "destination", label = "Destination", value = '', placeholder = 'Input a location in the CBD...'),
                       sliderInput(inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =30, step=30),
                       prettyRadioButtons(inputId="leaving", label="Leaving", choices=c("Now","Selected Time & Day"), selected ="Selected Time & Day"),
                       conditionalPanel(condition = "input.leaving == 'Selected Time & Day'",
                       selectInput(inputId = "day", label = "Day", choices = c('Monday','Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), selected = day_of_week),
                       selectInput(inputId = "hour", label = "Hour", choices = hours, selected= hour_now)),
                       br(),
-                      actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),
+                      actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"),
+                      br(),
+                      br()),
   
   # Custom JavaScript to allow places autocomplete
   
-  dashboardBody(HTML(paste0(" <script> 
+  dashboardBody(HTML(paste0("
+                <script>
                 function initAutocomplete() {
-
-                var autocomplete = new google.maps.places.Autocomplete(document.getElementById('destination'),{types: ['geocode']});
+                                var defaultBounds = new google.maps.LatLngBounds(
+                                new google.maps.LatLng(-38.180008 , 144.365954),
+                                new google.maps.LatLng(-37.575154, 145.662341)
+                );
+                var restriction_options ={
+                bounds: defaultBounds,
+                strictBounds: true
+                };
+                var autocomplete = new google.maps.places.Autocomplete(document.getElementById('origin'),restriction_options);
                 autocomplete.setFields(['address_components', 'formatted_address',  'geometry', 'icon', 'name']);
                 autocomplete.addListener('place_changed', function() {
                 var place = autocomplete.getPlace();
-                if (!place.geometry) {
-                return;
-                }
 
-                var addressPretty = place.formatted_address;
-                var address = '';
-                if (place.address_components) {
-                address = [
-                (place.address_components[0] && place.address_components[0].short_name || ''),
-                (place.address_components[1] && place.address_components[1].short_name || ''),
-                (place.address_components[2] && place.address_components[2].short_name || ''),
-                (place.address_components[3] && place.address_components[3].short_name || ''),
-                (place.address_components[4] && place.address_components[4].short_name || ''),
-                (place.address_components[5] && place.address_components[5].short_name || ''),
-                (place.address_components[6] && place.address_components[6].short_name || ''),
-                (place.address_components[7] && place.address_components[7].short_name || '')
-                ].join(' ');
-                }
-                var address_number =''
-                address_number = [(place.address_components[0] && place.address_components[0].short_name || '')]
-                var coords = place.geometry.location;
-                //console.log(address);
-                Shiny.onInputChange('jsValue', address);
-                Shiny.onInputChange('jsValueAddressNumber', address_number);
-                Shiny.onInputChange('jsValuePretty', addressPretty);
-                Shiny.onInputChange('jsValueCoords', coords);});}
+                var addressorigin = place.formatted_address;
+                var coordsOrigin = place.geometry.location;
+                Shiny.onInputChange('jsorigin', addressorigin);
+                Shiny.onInputChange('jsorigincoords', coordsOrigin);
+                
+                });
+                
+                var autocomplete2 = new google.maps.places.Autocomplete(document.getElementById('destination'),restriction_options);
+                autocomplete2.setFields(['address_components', 'formatted_address',  'geometry', 'icon', 'name']);
+                autocomplete2.addListener('place_changed', function() {
+                var place2 = autocomplete2.getPlace();
+
+                var addressdestination = place2.formatted_address;
+                var coordsDest = place2.geometry.location;
+                Shiny.onInputChange('jsdestcoords', coordsDest);
+                Shiny.onInputChange('jsdestination', addressdestination);});}
+                
                 </script> 
                 <script src='https://maps.googleapis.com/maps/api/js?key=", key,"&libraries=places&callback=initAutocomplete' async defer></script>")),
-    
+                
     # all the output elements
     useShinyalert(),           
     strong(htmlOutput("map_title")),           
@@ -122,6 +121,9 @@ ui <- dashboardPage(
     br(),
     uiOutput("show_time_statistics"),
     br(),
-    uiOutput("show_cost_statistics")
+    uiOutput("show_cost_statistics"),
+    br(),
+    br(),
+    br()
   )
 )
