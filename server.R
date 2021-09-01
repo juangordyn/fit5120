@@ -189,7 +189,7 @@ retrieve_route_private <- function(car_directions, parking_time, parking_distanc
     distance <- text_click_polyline_df[i, 'distance']
     duration <- text_click_polyline_df[i, 'duration']
     text_click_vector <- c(text_click_vector, paste('Driving<br />', distance,
-                                                    ' | ', duration,'<br /><br />Parking<br />', parking_time, ' min<br /><br />Walk CarPark-Dest<br/ >', parking_distance, ' mts | ',walking_time,' min', sep=''))
+                                                    ' | ', duration,'<br /><br />Find Parking<br />', parking_time, ' min<br /><br />Walk CarPark-Dest<br/ >', parking_distance, ' mts | ',walking_time,' min', sep=''))
   }
   df_route$polyline_hover <- text_click_vector
   return(df_route)
@@ -217,19 +217,33 @@ transport_cost_calculator <- function(hour){
   return(public_fare)
 }
 
-# defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+has_toll_funct <- function(private_transport_route){
+  html_instructions <- private_transport_route$routes$legs[[1]]$steps[[1]]$html_instructions
+  for(i in 1:length(html_instructions)){
+    has_toll <- html_instructions[i][[1]]
+    if(grepl( 'Toll road', has_toll, fixed = TRUE)){
+      return('Has tolls')
+      break
+    }
+    if(i==length(html_instructions)){
+      return('No tolls')
+    }
+  }
+}
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+# defining env variables to make Reticulate package work (to connect Python with Shiny)
+# VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+
+# Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+# Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+# Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  # virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  # python_path = Sys.getenv('PYTHON_PATH')
+  # reticulate::use_python(python_path)
+  # reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   # reactive values
   destination_reactive <- reactiveVal('')
@@ -261,12 +275,14 @@ server <- function(input, output, session){
   time_restriction_ratio_reactive <- reactiveVal()
   public_transport_cost_reactive <- reactiveVal()
   total_private_cost_reactive <- reactiveVal()
+  has_tolls_reactive <- reactiveVal('')
+  map_title_reactive <- reactiveVal()
   
   # google map
   output$myMap <- renderGoogle_map({
     google_map(key = api_key,
                location = c(-37.8103, 144.9614),
-               zoom = 14,
+               zoom = 13,
                scale_control = TRUE, 
                height = 1000)})
   
@@ -274,7 +290,7 @@ server <- function(input, output, session){
   observeEvent(input$compare_journeys,{
     
     # initializing all the reactive values
-    max_walk_reactive(400)
+    max_walk_reactive(500)
     length_of_stay_reactive(input$length_of_stay)
     time_reactive(input$hour)
     day_reactive(input$day)
@@ -291,6 +307,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -306,6 +324,10 @@ server <- function(input, output, session){
       if(input$leaving=='Now'){
         # googles car directions
         car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', 'now', 'pessimistic')
+        # checking if the journey has tolls
+        has_tolls <- has_toll_funct(car_directions)
+        has_tolls_reactive(has_tolls)
+        
         # if no result ask user to input address again
         car_direction_status_reactive(car_directions$status)
         if(car_directions$status=='ZERO_RESULTS'| car_directions$status=='NOT_FOUND'){
@@ -459,7 +481,7 @@ server <- function(input, output, session){
                                       stroke_opacity = 0.7,
                                       info_window = "polyline_hover",
                                       mouse_over = 'Private car journey',
-                                      load_interval = 100)%>% 
+                                      load_interval = 100, update_map_view = FALSE)%>% 
               add_polylines(data = df_route_public,
                                       polyline = "route",
                                       stroke_colour = '#54C785',
@@ -467,15 +489,15 @@ server <- function(input, output, session){
                                       stroke_opacity = 0.7,
                                       info_window = "polyline_hover",
                                       mouse_over = 'Public transport journey',
-                                      load_interval = 100) %>% 
+                                      load_interval = 100, update_map_view = FALSE) %>% 
               add_circles(data=parking_data_reactive_complete(), lat='lat', lon='lon', 
-                                      fill_colour='color', radius = 20, stroke_colour= 'color', info_window='hover_over', mouse_over = 'hover_over') %>% 
+                                      fill_colour='color', radius = 20, stroke_colour= 'color', info_window='hover_over', mouse_over = 'hover_over', focus_layer = TRUE) %>% 
         add_markers(data=df_destination, info_window = "address")
       map_title <- 'Public vs Private Journey including Real-Time Parking Availability'
+      map_title_reactive(map_title)
       end_time <- with_tz(Sys.time(), 'Australia/Melbourne')
       print(end_time-start_time)
       remove_modal_spinner()
-      print('tuvieja7')
         }
       }
       }
@@ -487,6 +509,9 @@ server <- function(input, output, session){
         # ALL ANALOGOUS TO ABOVE BUT FOR DISPLAYING HISTORICAL PARKING DATA INSTEAD OF LIVE, AND JOURNEYS IN SELECTED TIMES AND DAYS
         # EXCEPT OF RIGHT NOW
         car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', "now", 'pessimistic')
+        # checking if the private route has tolls
+        has_tolls <- has_toll_funct(car_directions)
+        has_tolls_reactive(has_tolls)
         
         car_direction_status_reactive(car_directions$status)
         if(car_directions$status=='ZERO_RESULTS'|car_directions$status=='NOT FOUND'){
@@ -546,7 +571,7 @@ server <- function(input, output, session){
             svals[i] <- 1
           }
         }
-        f <- colorRamp(c("#FBF8F8", "#FA4A39"))
+        f <- colorRamp(c("#FACAC4", "#FA4A39"))
         parking_statistics_df$color <- rgb(f(svals)/255)
         
         if(day_reactive()!='Sunday' & ((as.POSIXct(time_reactive(), format='%H:%M')>as.POSIXct('7:30', format='%H:%M')&as.POSIXct(time_reactive(), format ='%H:%M')<as.POSIXct('18:30', format='%H:%M')))){
@@ -609,7 +634,8 @@ server <- function(input, output, session){
                         stroke_opacity = 0.7,
                         info_window = "polyline_hover",
                         mouse_over = 'Private car journey',
-                        load_interval = 100)%>% 
+                        load_interval = 100,
+                        update_map_view = FALSE)%>% 
           add_polylines(data = df_route_public,
                         polyline = "route",
                         stroke_colour = '#54C785',
@@ -617,11 +643,13 @@ server <- function(input, output, session){
                         stroke_opacity = 0.7,
                         info_window = "polyline_hover",
                         mouse_over = 'Public transport journey',
-                        load_interval = 100) %>% 
+                        load_interval = 100,
+                        update_map_view = FALSE) %>% 
           add_circles(data=parking_data_reactive_complete(), lat='mean_lat', lon='mean_long', 
-                      fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information', mouse_over = 'hover_information') %>% 
+                      fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information', mouse_over = 'hover_information', focus_layer = TRUE) %>% 
           add_markers(data=df_destination, info_window = "address")
         map_title <- 'Public vs Private Journey including Historical Parking Availability'
+        map_title_reactive(map_title)
         remove_modal_spinner()
         }
         }
@@ -631,7 +659,10 @@ server <- function(input, output, session){
         }
     
     if(car_direction_status_reactive()!='ZERO_RESULTS'& car_direction_status_reactive()!='NOT_FOUND' & cbd_distance_reactive()<=2500 & journey_distance_reactive() <=20000 & parking_statistics_df_reactive()!='No results' & (sensor_live_df_reactive()!='No results')){
-    output$map_title <- renderText(map_title)
+      output$map_title <- renderUI({
+      fluidRow(column(10, style="border-radius:8px; background-color: #7E8BFA; border-style:solid; border-color:#b1d1fc; margin: 5px; padding: 10px", strong(htmlOutput("titles"))))
+      })
+     output$titles <- renderText(paste('<font color=white>', map_title_reactive(), '</font>', sep=''))
     output$show_non_restricted <- renderUI({
       fluidRow(column(6,style="border-radius:8px; background-color: #7E8BFA; border-style:solid; border-color:#b1d1fc; margin: 5px; padding: 10px", div(prettyCheckbox('restrictions_checkbox', 'Show only parkings within time restriction', FALSE), style = "color:white;")))
       })
@@ -643,10 +674,14 @@ server <- function(input, output, session){
       fluidRow(width = 12, valueBoxOutput("cost_private")  , valueBoxOutput("cost_public"))})
     
      # dashboard stats output
-    output$time_private <- renderValueBox({valueBox(paste(formatC(total_time_private_reactive(), format="d", big.mark=','),'min') , HTML(paste('<b>Total Journey Time Private</b><br /><br />', time_steps_private_reactive()), sep=''), icon = icon("clock"), color = "orange")})
-    output$parking_stats <- renderValueBox({valueBox(paste(formatC(parking_occupation_reactive(), format="d", big.mark=','),'%') , HTML(paste('<b>Occupation ratio</b><br /><br />Parking Time: ', parking_time_reactive(), 'min<br /><br />Parking Cost: ', parking_cost_reactive(), '$<br /><br />Time restriction non-availability: ', time_restriction_ratio_reactive()), '%', sep=''), icon = icon("parking"),color = "purple")})
-    output$cost_private <- renderValueBox({valueBox(paste('$', total_private_cost_reactive()) , HTML(paste('<b>Total Journey Cost Private</b><br /><br />Driving Cost: $', driving_cost_reactive(),'<br />Parking Cost: ', parking_cost_reactive()), sep=''), icon = icon("dollar-sign"), color = "orange")})
-    output$cost_public <- renderValueBox({valueBox(paste('$', public_transport_cost_reactive()) , HTML(paste('<b>Total Journey Cost Public</b><br /><br />', sep='')), icon = icon("dollar-sign"),color = "green")})
+    output$time_private <- renderValueBox({valueBox(paste(formatC(total_time_private_reactive(), format="d", big.mark=','),'min') , HTML(paste('<b>Total Journey Time Private Car</b><br /><br />', time_steps_private_reactive()), sep=''), icon = icon("clock"), color = "orange")})
+    output$parking_stats <- renderValueBox({valueBox(paste(formatC(parking_occupation_reactive(), format="d", big.mark=','),'%') , HTML(paste('<b>Parking Occupation</b><br /><br />Find Parking: ', parking_time_reactive(), 'min<br /><br />Parking Cost: ', parking_cost_reactive(), '$<br /><br />Time restriction non-availability: ', time_restriction_ratio_reactive()), '%', sep=''), icon = icon("parking"),color = "purple")})
+    if(has_tolls_reactive()=='No tolls'){
+    output$cost_private <- renderValueBox({valueBox(paste('$', total_private_cost_reactive()) , HTML(paste('<br /><b>Total Journey Cost Private Car</b><br /><br />Driving Cost*: $', driving_cost_reactive(),'<br />Parking Cost: ', parking_cost_reactive()), '<br />Tolls: ', has_tolls_reactive(), '<br /><br /><br /><font size="-2">*Driving cost is estimated by multiplying driven distance by 2020 average fuel consumption per km for vehicles in Australia by average price of petrol Litre in Melbourne.</font>', sep=''), icon = icon("dollar-sign"), color = "orange")})}
+    else{
+      output$cost_private <- renderValueBox({valueBox(paste('$', total_private_cost_reactive()) , HTML(paste('<b><center>+ tolls</center></b><b>Total Journey Cost Private Car</b><br /><br />Driving Cost*: $', driving_cost_reactive(),'<br />Parking Cost: ', parking_cost_reactive()), '<br />Tolls: Yes<br /><br /><br /><font size="-2">*Driving cost is estimated by multiplying driven distance by 2020 average fuel consumption per km for vehicles in Australia by average price of petrol Litre in Melbourne.</font>', sep=''), icon = icon("dollar-sign"), color = "orange")})}
+    
+    output$cost_public <- renderValueBox({valueBox(paste('$', public_transport_cost_reactive()) , HTML(paste('<br /><b>Total Journey Cost Public</b><br /><br />', sep='')), icon = icon("dollar-sign"),color = "green")})
     
     output$time_public <- renderValueBox({valueBox(paste(formatC(total_time_public_reactive(), format="d", big.mark=','),'min') , HTML(paste('<b>Total Journey Time Public</b><br /><br />', public_steps_short(), '<br /><button class="btn action-button" type="button" id="buttonSeeMore" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><b>See more</b></button>'), sep=''), icon = icon("clock"),color = "green")})
     }
