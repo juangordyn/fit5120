@@ -120,6 +120,7 @@ def retrieve_occupation_vacancy_time(query_result):
         except:
             continue
         j+=1
+    occupation_vacancy_statistics['avg_vacancy'] = 0.25*occupation_vacancy_statistics['avg_vacancy']
     return occupation_vacancy_statistics
 
 """
