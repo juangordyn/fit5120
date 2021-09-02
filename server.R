@@ -231,19 +231,30 @@ has_toll_funct <- function(private_transport_route){
   }
 }
 
-# defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+stat_1 <- 'Australia was ranked second-worst in transport energy efficiency in 2019.'
+stat_2 <- "Transport is Australia's third largest source of greenhouse gas emissions."
+stat_3 <- "Cars are responsible for roughly half of Australia's transport emissions."
+stat_4 <- "After lockdown, car trips to Melbourne's CBD could increase by 33%."
+stat_5 <- "Daily, more than 90,000 car trips are made to Melbourne's CBD."
+stat_6 <- "Spencer St. has recorded a 20% increase in Traffic congestion levels since 2018."
+stat_7 <- "Australian cars have emitted in 2019 the same amount of gas than the entire Queensland's electricity supply."
+stat_8 <- "Demand for public transport is set to increase by 89% in Australia by 2031."
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
+
+# defining env variables to make Reticulate package work (to connect Python with Shiny)
+# VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+
+# Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+# Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+# Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  # virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  # python_path = Sys.getenv('PYTHON_PATH')
+  # reticulate::use_python(python_path)
+  # reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   # reactive values
   destination_reactive <- reactiveVal('')
@@ -288,6 +299,8 @@ server <- function(input, output, session){
   
   # what happens when we click on Compare Journeys
   observeEvent(input$compare_journeys,{
+    random_stat <- sample(stats_while_waiting, 1)
+    show_modal_spinner(text = HTML(paste('<br />While you wait, did you know that...<br /><br/><b>', random_stat, '</b>', sep='')))
     
     # initializing all the reactive values
     max_walk_reactive(500)
@@ -307,6 +320,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -314,7 +329,9 @@ server <- function(input, output, session){
     
     # show warning if inputs are blank
     if(origin_reactive()== ''| destination_reactive()==''){
+      remove_modal_spinner()
       shinyalert(title = "Origin and destination cannot be blank", type = "error")
+      
     }
     else{
       
@@ -329,11 +346,13 @@ server <- function(input, output, session){
         # if no result ask user to input address again
         car_direction_status_reactive(car_directions$status)
         if(car_directions$status=='ZERO_RESULTS'| car_directions$status=='NOT_FOUND'){
+          remove_modal_spinner()
           shinyalert(title = "Please check your input addresses", type = "error")
+          
         }
         else{
         # lats and longs
-        show_modal_spinner(text = 'This might take a little while...')
+        # show_modal_spinner(text = 'This might take a little while...')
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
         end_lng <- car_directions$routes$legs[[1]]$end_location$lng
         start_lat <- car_directions$routes$legs[[1]]$start_location$lat
@@ -352,6 +371,7 @@ server <- function(input, output, session){
           remove_modal_spinner()
           shinyalert(title = "Your destination address is outside Melbourne CBD", type = "error")
           
+          
         }
           
         else{
@@ -362,6 +382,7 @@ server <- function(input, output, session){
           if (journey_distance >20000){
             remove_modal_spinner()
             shinyalert(title = "Your origin address is not within a 20 km radius of the CBD", type = "error")
+            
           }
         else{
         # public trasnport journey calculation
@@ -377,6 +398,7 @@ server <- function(input, output, session){
         if(sensor_live_df=='No results'){
           remove_modal_spinner()
           shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
+          
         }
         else{
         marker_ids <- unique(sensor_live_df$marker_id)
@@ -397,6 +419,7 @@ server <- function(input, output, session){
         if (parking_statistics_df == 'No results'){
           remove_modal_spinner()
           shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
+          
         }
         else{
         sensor_live_df <- merge(x=sensor_live_df, y=parking_statistics_df, by = 'marker_id')
@@ -406,6 +429,7 @@ server <- function(input, output, session){
           sensor_live_df_reactive('No results')
           remove_modal_spinner()
           shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
+          
         }
         else{
         sensor_live_df$avg_vacancy <- round(sensor_live_df$avg_vacancy)
@@ -496,6 +520,7 @@ server <- function(input, output, session){
       end_time <- with_tz(Sys.time(), 'Australia/Melbourne')
       print(end_time-start_time)
       remove_modal_spinner()
+      
         }
       }
       }
@@ -513,11 +538,13 @@ server <- function(input, output, session){
         
         car_direction_status_reactive(car_directions$status)
         if(car_directions$status=='ZERO_RESULTS'|car_directions$status=='NOT FOUND'){
+          remove_modal_spinner()
           shinyalert(title = "Please check your input adresses", type = "error")
+          
         }
         else{
         
-        show_modal_spinner(text = 'This might take a little while...')
+        # show_modal_spinner(text = 'This might take a little while...')
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
         end_lng <- car_directions$routes$legs[[1]]$end_location$lng
         start_lat <- car_directions$routes$legs[[1]]$start_location$lat
@@ -544,6 +571,7 @@ server <- function(input, output, session){
         if (journey_distance >20000){
           remove_modal_spinner()
           shinyalert(title = "Your origin address is not within a 20 km radius of the CBD", type = "error")
+          
         }
         else{
         public_transport_directions <- directions(origin_reactive(), destination_reactive(), 'transit', "now", 'best_guess')
@@ -558,6 +586,7 @@ server <- function(input, output, session){
         if (parking_statistics_df == 'No results'){
           remove_modal_spinner()
           shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
+          
         }
         else{
         end_time <- with_tz(Sys.time(), 'Australia/Melbourne')
@@ -649,6 +678,7 @@ server <- function(input, output, session){
         map_title <- 'Public vs Private Journey including Historical Parking Availability'
         map_title_reactive(map_title)
         remove_modal_spinner()
+        
         }
         }
         }
@@ -661,10 +691,18 @@ server <- function(input, output, session){
       fluidRow(column(10, style="border-radius:8px; background-color: #7E8BFA; border-style:solid; border-color:#b1d1fc; margin: 5px; padding: 10px", strong(htmlOutput("titles"))))
       })
      output$titles <- renderText(paste('<font color=white>', map_title_reactive(), '</font>', sep=''))
+     if(map_title_reactive()=='Public vs Private Journey including Real-Time Parking Availability'){
+       output$map_legend <- renderUI({
+         fluidRow(column(6, img(src = 'map_legend_live.png')))
+       })}
+     else{
+       output$map_legend <- renderUI({
+         fluidRow(column(5, img(src = 'map_legend_historical_2.jpeg')))
+       }) 
+     }
     output$show_non_restricted <- renderUI({
       fluidRow(column(6,style="border-radius:8px; background-color: #7E8BFA; border-style:solid; border-color:#b1d1fc; margin: 5px; padding: 10px", div(prettyCheckbox('restrictions_checkbox', 'Show only parkings within time restriction', FALSE), style = "color:white;")))
-      })
-    
+    })
     output$show_time_statistics <- renderUI({
     fluidRow(width = 12, valueBoxOutput("time_private")  , valueBoxOutput("time_public"), valueBoxOutput("parking_stats"))})
     
@@ -677,7 +715,7 @@ server <- function(input, output, session){
     if(has_tolls_reactive()=='No tolls'){
     output$cost_private <- renderValueBox({valueBox(paste('$', total_private_cost_reactive()) , HTML(paste('<br /><b>Total Journey Cost Private Car</b><br /><br />Driving Cost*: $', driving_cost_reactive(),'<br />Parking Cost: ', parking_cost_reactive()), '<br />Tolls: ', has_tolls_reactive(), '<br /><br /><br /><font size="-2">*Driving cost is estimated by multiplying driven distance by 2020 average fuel consumption per km for vehicles in Australia by average price of petrol Litre in Melbourne.</font>', sep=''), icon = icon("dollar-sign"), color = "orange")})}
     else{
-      output$cost_private <- renderValueBox({valueBox(paste('$', total_private_cost_reactive()) , HTML(paste('<b><center>+ tolls</center></b><b>Total Journey Cost Private Car</b><br /><br />Driving Cost*: $', driving_cost_reactive(),'<br />Parking Cost: ', parking_cost_reactive()), '<br />Tolls: Yes<br /><br /><br /><font size="-2">*Driving cost is estimated by multiplying driven distance by 2020 average fuel consumption per km for vehicles in Australia by average price of petrol Litre in Melbourne.</font>', sep=''), icon = icon("dollar-sign"), color = "orange")})}
+      output$cost_private <- renderValueBox({valueBox(paste('$', total_private_cost_reactive()) , HTML(paste('<b><center>+ TOLLS</center></b><b>Total Journey Cost Private Car</b><br /><br />Driving Cost*: $', driving_cost_reactive(),'<br />Parking Cost: ', parking_cost_reactive()), '<br />Tolls: Yes<br /><br /><br /><font size="-2">*Driving cost is estimated by multiplying driven distance by 2020 average fuel consumption per km for vehicles in Australia by average price of petrol Litre in Melbourne.</font>', sep=''), icon = icon("dollar-sign"), color = "orange")})}
     
     output$cost_public <- renderValueBox({valueBox(paste('$', public_transport_cost_reactive()) , HTML(paste('<br /><b>Total Journey Cost Public</b><br /><br />', sep='')), icon = icon("dollar-sign"),color = "green")})
     
