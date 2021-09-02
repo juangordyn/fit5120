@@ -34,7 +34,7 @@ ui <- dashboardPage(
                         titleWidth = 450),
   dashboardSidebar(      tags$head(tags$style(HTML("
                                 .skin-blue .main-header .logo {
-                                background-color: #6553F7;
+                                background-color: #7E8BFA;
                                 }
 
                                 /* logo when hovered */
@@ -44,7 +44,7 @@ ui <- dashboardPage(
 
                                 /* navbar (rest of the header) */
                                 .skin-blue .main-header .navbar {
-                                background-color: #6553F7;
+                                background-color: #7E8BFA;
                                 }
                                 
                                 /* main sidebar */
@@ -58,12 +58,11 @@ ui <- dashboardPage(
                                 }
                                 .js-irs-0 .irs-single, .js-irs-0 .irs-bar-edge, .js-irs-0 .irs-bar {background: #E56B76}
                                 .tooltip .tooltip-inner {background-color: #E56B76 ; }
+                                .box-body {
+                                padding-bottom: 0px;
                                                    
                                 "))),width=325,
                                 
-                      br(),
-                      img(src = 'jamsnot_logo.png'),
-                      br(),
                       br(),
                       textInput(inputId = "origin", label = "Origin", value = '', placeholder='Input a location within 20 km of the CBD...'),
                       textInput(inputId = "destination", label = "Destination", value = '', placeholder = 'Input a location in the CBD...'),
@@ -78,6 +77,9 @@ ui <- dashboardPage(
                       selectInput(inputId = "hour", label = "Hour", choices = hours, selected= hour_now)),
                       br(),
                       actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"),
+                      br(),
+                      br(),
+                      br(),
                       br(),
                       br()),
   
@@ -130,6 +132,8 @@ ui <- dashboardPage(
     uiOutput("show_time_statistics"),
     br(),
     uiOutput("show_cost_statistics"),
+    br(),
+    br(),
     br(),
     br(),
     br()
