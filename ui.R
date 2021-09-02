@@ -67,7 +67,7 @@ ui <- dashboardPage(
                       br(),
                       textInput(inputId = "origin", label = "Origin", value = '', placeholder='Input a location within 20 km of the CBD...'),
                       textInput(inputId = "destination", label = "Destination", value = '', placeholder = 'Input a location in the CBD...'),
-                      sliderInput(inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =30, step=30)%>% shinyInput_label_embed(
+                      sliderInput(inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =90, step=30)%>% shinyInput_label_embed(
                         icon("info") %>%
                           bs_embed_tooltip(title = 'How long are you planning on staying at the CBD? This information is relevant to calculate the estimated time to find a Parking Space as well as its cost.')),
                       prettyRadioButtons(inputId="leaving", label="Leaving", choices=c("Now","Selected Time & Day"), selected ="Selected Time & Day")%>% shinyInput_label_embed(
@@ -122,6 +122,7 @@ ui <- dashboardPage(
     # all the output elements
     useShinyalert(),
     uiOutput("map_title"),
+    uiOutput("map_legend"),
     google_mapOutput("myMap"),
     uiOutput("show_non_restricted"),
     br(),
