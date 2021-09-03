@@ -78,6 +78,8 @@ ui <- dashboardPage(
                       br(),
                       actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"),
                       br(),
+                      'Note: if after clicking Compare Journeys for the first time, you cannot see the routes and Parkings on the map, please refresh this page and try again, it should work. Some browsers block the first try. We are working on fixing that. Sorry and thank you =)',
+                      br(),
                       br(),
                       br(),
                       br(),
