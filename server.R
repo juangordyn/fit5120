@@ -259,18 +259,18 @@ stat_8 <- "Demand for public transport is set to increase by 89% in Australia by
 stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+# VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+# Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+# Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+# Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  # virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  # python_path = Sys.getenv('PYTHON_PATH')
+  # reticulate::use_python(python_path)
+  # reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   # reactive values
   destination_reactive <- reactiveVal('')
@@ -344,6 +344,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -570,14 +572,14 @@ server <- function(input, output, session){
       difference <- abs(input_dow - today_dow)
       if (difference!=0)
       {
-        departure_hour <- as.POSIXct(input$hour, format ='%H:%M') + days(difference)
+        departure_hour <- with_tz(as.POSIXct(input$hour, format ='%H:%M') + days(difference), 'Australia/Melbourne')
       } else
       {
-        if(with_tz(Sys.time(), 'Australia/Melbourne')>as.POSIXct(input$hour, format ='%H:%M')){
-          departure_hour <- as.POSIXct(input$hour, format ='%H:%M') + days(7)
+        if(with_tz(Sys.time(), 'Australia/Melbourne')>with_tz(as.POSIXct(input$hour, format ='%H:%M'), 'Australia/Melbourne')){
+          departure_hour <- with_tz(as.POSIXct(input$hour, format ='%H:%M') + days(7), 'Australia/Melbourne')
         } else
         {
-          departure_hour <- as.POSIXct(input$hour, format ='%H:%M')
+          departure_hour <- with_tz(as.POSIXct(input$hour, format ='%H:%M'), 'Australia/Melbourne')
         }
       }
         car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', departure_hour, 'pessimistic')
