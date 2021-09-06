@@ -327,7 +327,7 @@ server <- function(input, output, session){
     show_modal_spinner(text = HTML(paste('<br />While you wait, did you know that...<br /><br/><b>', random_stat, '</b>', sep='')))
     
     # initializing all the reactive values
-    max_walk_reactive(500)
+    max_walk_reactive(300)
     length_of_stay_reactive(input$length_of_stay)
     time_reactive(input$hour)
     day_reactive(input$day)
