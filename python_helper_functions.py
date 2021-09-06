@@ -70,7 +70,7 @@ def query_statistics(all_sensors_df, destination_lat, destination_long, length_o
     parking_df = parking_df.sort_values(by='dist').reset_index(drop = True)
     parking_df = parking_df[~parking_df.maximum_stay.isna()]
     marker_id_tuples = str(tuple(parking_df.marker_id.unique()))
-    url = "https://data.melbourne.vic.gov.au/resource/5532-ig9r.json?$limit=20000&$select=StreetMarker,vehiclepresent,avg(durationminutes),sum(durationminutes)&$group=StreetMarker,vehiclepresent&$where=(StreetMarker in "+ marker_id_tuples +") and ((date_extract_dow(arrivaltime)='"+str(dayofweek)+"' and date_extract_hh(arrivaltime) between '"+str(min_hour)+"' and '"+str(max_hour)+"'))"
+    url = "https://data.melbourne.vic.gov.au/resource/5532-ig9r.json?$limit=20000&$select=StreetMarker,vehiclepresent,avg(durationminutes),sum(durationminutes),sum(case(inviolation='True',1,true,0)) as fine_count,sum(case(inviolation='False',1,true,0)) as no_fine_count&$group=StreetMarker,vehiclepresent&$where=(StreetMarker in "+ marker_id_tuples +") and ((date_extract_dow(arrivaltime)='"+str(dayofweek)+"' and date_extract_hh(arrivaltime) between '"+str(min_hour)+"' and '"+str(max_hour)+"'))"
     query_response = json.loads(requests.get(url).content)
     return[query_response]
 
@@ -83,7 +83,7 @@ def query_statistics_live(marker_ids, time, dayofweek):
     min_hour = int(datetime.strptime(time,'%H:%M').strftime('%H'))
     max_hour = min_hour + 1
     marker_id_tuples = str(tuple(marker_ids))
-    url2 = "https://data.melbourne.vic.gov.au/resource/5532-ig9r.json?$limit=20000&$select=StreetMarker,vehiclepresent,avg(durationminutes),sum(durationminutes)&$group=StreetMarker,vehiclepresent&$where=(StreetMarker in "+ marker_id_tuples +") and ((date_extract_dow(arrivaltime)='"+str(dayofweek)+"' and date_extract_hh(arrivaltime) between '"+str(min_hour)+"' and '"+str(max_hour)+"'))"
+    url2 = "https://data.melbourne.vic.gov.au/resource/5532-ig9r.json?$limit=20000&$select=StreetMarker,vehiclepresent,avg(durationminutes),sum(durationminutes),sum(case(inviolation='True',1,true,0)) as fine_count,sum(case(inviolation='False',1,true,0)) as no_fine_count&$group=StreetMarker,vehiclepresent&$where=(StreetMarker in "+ marker_id_tuples +") and ((date_extract_dow(arrivaltime)='"+str(dayofweek)+"' and date_extract_hh(arrivaltime) between '"+str(min_hour)+"' and '"+str(max_hour)+"'))"
     average_occupation = json.loads(requests.get(url2).content)
     return[average_occupation]
 """
@@ -92,7 +92,6 @@ Function to calculate occupation and vacancy times, given the data queried in th
 
 """
 def retrieve_occupation_vacancy_time(query_result):
-
     occupation_vacancy_df = pd.DataFrame.from_dict(query_result[0], orient='columns')
     occupation_vacancy_statistics = pd.DataFrame()
     j=0
@@ -110,6 +109,9 @@ def retrieve_occupation_vacancy_time(query_result):
             else:
                 occupation_minutes = int(sum_statistic)
                 occupation_vacancy_statistics.loc[j, 'avg_occupation'] = round(float(statistic),2)
+                fine_count = int(occupation_vacancy_subset.loc[i, 'fine_count'])
+                no_fine_count = int(occupation_vacancy_subset.loc[i, 'no_fine_count'])
+                occupation_vacancy_statistics.loc[j, 'fine_prob'] = round((fine_count/(fine_count + no_fine_count))*100)
         try:
             occupation_ratio = round((occupation_minutes/total_minutes)*100)
             if occupation_ratio > 100:
@@ -120,7 +122,7 @@ def retrieve_occupation_vacancy_time(query_result):
         except:
             continue
         j+=1
-    occupation_vacancy_statistics['occupation_ratio'] = 1.25*occupation_vacancy_statistics['occupation_ratio']
+    occupation_vacancy_statistics['occupation_ratio'] = 1.5*occupation_vacancy_statistics['occupation_ratio']
     occupation_vacancy_statistics['occupation_ratio'] = occupation_vacancy_statistics['occupation_ratio'].apply(lambda x: 99.99 if x>100 else x)
     occupation_vacancy_statistics['avg_vacancy'] = 0.25*occupation_vacancy_statistics['avg_vacancy']
     return occupation_vacancy_statistics
