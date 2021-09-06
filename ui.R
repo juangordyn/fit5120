@@ -54,12 +54,13 @@ ui <- dashboardPage(
                                 .content-wrapper, .right-side {
                                 background-color: #FAF4F4;
                                 }
+                                .wrapper {height: auto !important; position:relative; overflow-x:hidden; overflow-y:hidden}
                                 .small-box .icon-large {top: 5px;
                                 }
                                 .js-irs-0 .irs-single, .js-irs-0 .irs-bar-edge, .js-irs-0 .irs-bar {background: #E56B76}
                                 .tooltip .tooltip-inner {background-color: #E56B76 ; }
                                 .box-body {
-                                padding-bottom: 0px;
+                                padding-bottom: 0px;}
                                                    
                                 "))),width=325,
                                 
@@ -78,7 +79,31 @@ ui <- dashboardPage(
                       br(),
                       actionButton("compare_journeys", "Compare Journeys", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"),
                       br(),
-                      'Note: if after clicking Compare Journeys for the first time, you cannot see the routes and Parkings on the map, please refresh this page and try again, it should work. Some browsers block the first try. We are working on fixing that. Sorry and thank you =)',
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
+                      br(),
                       br(),
                       br(),
                       br(),
@@ -128,8 +153,12 @@ ui <- dashboardPage(
     uiOutput("map_title"),
     uiOutput("map_legend"),
     google_mapOutput("myMap"),
+    br(),
+    uiOutput("map_sliders"),
     uiOutput("show_non_restricted"),
     br(),
+    br(),
+    uiOutput("journey_icons"),
     br(),
     uiOutput("show_time_statistics"),
     br(),
