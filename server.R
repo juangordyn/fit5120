@@ -251,14 +251,14 @@ public_benefits <- function(total_time_public, total_time_private, total_cost_pu
                              has_tolls, fine_prob){
   
   if(round(total_time_public)<round(total_time_private)){
-    total_time_benefit <- paste('<br /><br /><img src="checked_32.png">   <img src="clock_benefits_32.png"><font size="4">    You will be saving around ', round(total_time_private-total_time_public), ' minutes.</font>', sep='')
+    total_time_benefit <- paste('<br /><br /><img src="checked_32.png">   <img src="clock_benefits_32.png"><font size="4"> Save around ', round(total_time_private-total_time_public), ' minutes by using Public Transport.</font>', sep='')
   }
   else{
     total_time_benefit=''
   }
   
   if(total_cost_public<total_cost_private){
-    total_cost_benefit <- paste('<br /><br /><img src="checked_32.png"> <img src="money_bag_32.png"><font size="4">    You will be saving around $', round(total_cost_private-total_cost_public), ' without considering tolls nor fines.</font>', sep='')
+    total_cost_benefit <- paste('<br /><br /><img src="checked_32.png"> <img src="money_bag_32.png"><font size="4">Save around $', round(total_cost_private-total_cost_public), ' by using Public Transport excluding tolls and fines.</font>', sep='')
   }
   else{
     total_cost_benefit=''
@@ -273,7 +273,7 @@ public_benefits <- function(total_time_public, total_time_private, total_cost_pu
   
   if(has_tolls == 'Has tolls'){
     
-    tolls_benefit <- ('<br /><br /><img src="checked_32.png">   <img src="toll_jose_32.png"><font size="4">    Your optimal private trip includes tolls that can represent up to $10.27 extra in your final journey cost.</font>')
+    tolls_benefit <- ('<br /><br /><img src="checked_32.png">   <img src="toll_jose_32.png"><font size="4">Your current private vehicle journey includes tolls which can cost you up to $10.27 extra on your total cost of the journey.</font>')
     
   }
   
@@ -283,13 +283,13 @@ public_benefits <- function(total_time_public, total_time_private, total_cost_pu
   
   if(fine_prob > 10){
     
-    fines_benefit <- paste('<br /><br /><img src="checked_32.png"> <img src="police_jose_32.png"><font size="4">    A Parking fine probability of ', fine_prob, '% is considerably high. Parking fines in Melbourne range from $91 to $182 depending on the offence.</font>', sep='')
+    fines_benefit <- paste('<br /><br /><img src="checked_32.png"> <img src="police_jose_32.png"><font size="4"> The current fine probability is ', fine_prob, '% which is considerably high. Parking fines in Melbourne range from $91 to $182 depending on the offence.</font>', sep='')
     
   }
   else{
     fines_benefit <- ''
   }
-  emissions_benefit <- '<br /><br /><img src="checked_32.png">   <img src="no_pollution_32.png"><font size="4">    A 10% shift to bus passenger transport from cars would reduce greenhouse gas emissions by more than 400,000 tonnes a year.</font><br /><br /><img src="checked_32.png">  <img src="no_pollution_32.png"><font size="4">    A 10% shift to trains/trams from cars could save as much as 4 Million tonnes of emissions a year.</font>'
+  emissions_benefit <- '<br /><br /><img src="checked_32.png">   <img src="no_pollution_32.png"><font size="4"> If only 10% of the private car owners shift to using bus as Public Transport, greenhouse gas emission will be reduced by more than 400,000 tonnes a year.</font><br /><br /><img src="checked_32.png">  <img src="no_pollution_32.png"><font size="4"> If only 10% of the private car owners shift to using train and trams, greenhouse gas emission will be reduced by more than 4 Million tonnes a year.</font>'
   
   final_benefits_string <- paste(total_time_benefit, total_cost_benefit, tolls_benefit, fines_benefit, emissions_benefit, sep='')
   return(final_benefits_string)
@@ -307,18 +307,18 @@ stat_8 <- "Demand for public transport is set to increase by 89% in Australia by
 stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+# VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+# Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+# Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+# Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  # virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  # python_path = Sys.getenv('PYTHON_PATH')
+  # reticulate::use_python(python_path)
+  # reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   # reactive values
   destination_reactive <- reactiveVal('')
@@ -394,6 +394,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -815,7 +817,7 @@ server <- function(input, output, session){
      }
     output$map_sliders <- renderUI({
       fluidRow(
-        column(4, align='center', sliderInput(inputId = "max_stay_map", label = HTML('<img src= "clock_32.png"><br /><br /><span class ="notbold">Length of stay in minutes</span>'), min = 30, max=240, value = input$length_of_stay, step=30)),   bsTooltip("max_stay_map", "Increase the time you will be staying at the CBD and see how the parkings that are not within your time limits turn yellow. Please note that it ONLY has an effect on the map and not on the below calculations.", placement = "top", trigger = "hover",options = NULL),
+        column(4, align='center', sliderInput(inputId = "max_stay_map", label = HTML('<img src= "clock_32.png"><br /><br /><span class ="notbold">Length of stay in minutes</span>'), min = 30, max=240, value = input$length_of_stay, step=30)),   bsTooltip("max_stay_map", "Increase the time you will be staying at the CBD and see how the parkings that are not within your time limits turn yellow.", placement = "top", trigger = "hover",options = NULL),
                column(2, align = 'center', actionButton("routes_zoom_out", "Zoom Out", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),column(2, align = 'center', actionButton("parking_zoom_in", "Zoom In", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")), column(4, align = 'center', sliderInput(inputId = "disabled_max_distance", label = HTML('<img src="disabled_32.png"><br /><br /><span class ="notbold">Distance in metres</span>'), min = 0, max=1000, value =0, step=250)),   bsTooltip("disabled_max_distance", "Retrieve all disability parking spaces on the map within the selected distance.", placement = "top", trigger = "hover",options = NULL))
                                                                                                                                                                                 
     })
