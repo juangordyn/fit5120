@@ -219,6 +219,7 @@ transport_cost_calculator <- function(hour){
   return(public_fare)
 }
 
+# function to detect if the private route includes tolls or not
 has_toll_funct <- function(private_transport_route){
   html_instructions <- private_transport_route$routes$legs[[1]]$steps[[1]]$html_instructions
   for(i in 1:length(html_instructions)){
@@ -233,6 +234,7 @@ has_toll_funct <- function(private_transport_route){
   }
 }
 
+# function that returns disabled parking spaces
 show_disabled <- function(disabled_data_df, dest_lat, dest_lng, max_dist){
   for(i in 1:nrow(disabled_data_df)){
     disabled_lat <- as.numeric(disabled_data_df[i, 'mean_lat'])
@@ -247,6 +249,7 @@ show_disabled <- function(disabled_data_df, dest_lat, dest_lng, max_dist){
   return(disabled_data_subset)
 }
 
+# function to retrieve all the benefits related to taking public transport
 public_benefits <- function(total_time_public, total_time_private, total_cost_public, total_cost_private,
                              has_tolls, fine_prob){
   
@@ -294,6 +297,8 @@ public_benefits <- function(total_time_public, total_time_private, total_cost_pu
   final_benefits_string <- paste(total_time_benefit, total_cost_benefit, tolls_benefit, fines_benefit, emissions_benefit, sep='')
   return(final_benefits_string)
 }
+
+# stats displayed while waiting
 
 stat_1 <- 'Australia was ranked second-worst in transport energy efficiency in 2019.'
 stat_2 <- "Transport is Australia's third largest source of greenhouse gas emissions."
@@ -855,6 +860,7 @@ server <- function(input, output, session){
     }
     })
   
+  # how the map changes when using disabled distance slider bar
   observeEvent(input$disabled_max_distance, {
     disabled_max_distance_reactive(input$disabled_max_distance)
     if(input$disabled_max_distance!=0){
@@ -878,6 +884,7 @@ server <- function(input, output, session){
     }
     })
   
+  # Action on buttons to expand/contract statistics
   observeEvent(input$ExpandDisabledParking, {
     
     output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(min_distance_disabled_reactive(), format="d", big.mark=','),'mts'),'</center>', sep='')), HTML(paste('<b>to the closest parking space for people with disabilities</b><br /><br /><b>',  count_disabled_parkings_reactive(), '</b> exclusive Parking spaces within ', input$disabled_max_distance, ' mts of the destination<br /><br /><center><button class="btn action-button" type="button" id="ContractDisabledParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="arrow-up"></div></button></center>'), sep=''), icon = icon("wheelchair"),color = "purple")})
@@ -947,6 +954,7 @@ observeEvent(input$buttonSeeLess, {
     output$time_public <- renderValueBox({valueBox(paste(formatC(total_time_public_reactive(), format="d", big.mark=','),'mins') , HTML(paste('<b>Total Journey Time Public</b><br /><br />', public_steps_long(), '<br /><button class="btn action-button" type="button" id="buttonSeeLess" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><b>See less</b></button>'), sep=''), icon = icon("clock"),color = "green")})
   })
   
+  # how the map changes when we use max stay slider bar
   observeEvent(input$max_stay_map,{
       if(input$restrictions_checkbox==TRUE){
         updatePrettyCheckbox(session, 'restrictions_checkbox', 'Show only parkings within time restriction', FALSE)
@@ -978,6 +986,7 @@ observeEvent(input$buttonSeeLess, {
       }
     
   })
+  # zoom out button
   observeEvent(input$routes_zoom_out, {
     google_map_update(map_id = "myMap") %>% 
       clear_polylines()  %>% 
@@ -999,6 +1008,7 @@ observeEvent(input$buttonSeeLess, {
                     load_interval = 100)
   })
   
+  # zoom in button
   observeEvent(input$parking_zoom_in,{
     if(nrow(parking_data_reactive_incomplete())==0){
       updatePrettyCheckbox(session, 'restrictions_checkbox', 'Show only parkings within time restriction', FALSE)
