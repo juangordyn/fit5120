@@ -30,7 +30,7 @@ hour_now <- paste(as.character(hour(with_tz(Sys.time(), 'Australia/Melbourne')))
 # Initializing dashboard panels and styling them with CSS
 
 ui <- dashboardPage(
-  dashboardHeader(      title = "Compare public transport and car journeys",
+  dashboardHeader(      title = "Compare public transport and private vehicles journeys",
                         titleWidth = 450),
   dashboardSidebar(      tags$head(tags$style(HTML("
                                 .skin-blue .main-header .logo {
@@ -61,6 +61,32 @@ ui <- dashboardPage(
                                 .tooltip .tooltip-inner {background-color: #E56B76 ; }
                                 .box-body {
                                 padding-bottom: 0px;}
+                                
+                                .notbold{
+                                font-weight:normal
+                                }
+                                .triangle_down {
+                                width: 0;
+                                height: 0;
+                                border-left: 15px solid transparent;
+                                border-right: 15px solid transparent;
+                                border-top: 15px solid white;
+                                font-size: 0;
+                                line-height: 0;
+                                float: left;
+                                }
+                                .arrow-up {
+                                  width: 0; 
+                                  height: 0; 
+                                  border-left: 15px solid transparent;
+                                  border-right: 15px solid transparent;
+                              
+                                  border-bottom: 15px solid white;
+                                }
+                                #arrow_cost_private {
+                                margin: 0 auto;
+                                text-align: center;
+                                }
                                                    
                                 "))),width=325,
                                 
@@ -163,6 +189,9 @@ ui <- dashboardPage(
     uiOutput("show_time_statistics"),
     br(),
     uiOutput("show_cost_statistics"),
+    br(),
+    br(),
+    uiOutput("show_public_benefits"),
     br(),
     br(),
     br(),
