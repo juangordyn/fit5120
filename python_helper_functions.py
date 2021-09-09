@@ -138,9 +138,9 @@ def retrieve_occupation_vacancy_time(query_result):
         except:
             continue
         j+=1
-    occupation_vacancy_statistics['occupation_ratio'] = occupation_vacancy_statistics['occupation_ratio']
+    occupation_vacancy_statistics['occupation_ratio'] = 1.25*occupation_vacancy_statistics['occupation_ratio']
     occupation_vacancy_statistics['occupation_ratio'] = occupation_vacancy_statistics['occupation_ratio'].apply(lambda x: 99.99 if x>100 else x)
-    occupation_vacancy_statistics['avg_vacancy'] = 0.25*occupation_vacancy_statistics['avg_vacancy']
+    occupation_vacancy_statistics['avg_vacancy'] = 0.5*occupation_vacancy_statistics['avg_vacancy']
     # end = time.time()
     # print('occupation_vacancy_statistics', str(end - start))
     return occupation_vacancy_statistics
