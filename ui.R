@@ -98,7 +98,7 @@ ui <- dashboardPage(
                           bs_embed_tooltip(title = 'How long are you planning on staying at the CBD? This information is relevant to calculate the estimated time to find a Parking Space as well as its cost.')),
                       prettyRadioButtons(inputId="leaving", label="Leaving", choices=c("Now","Selected Time & Day"), selected ="Selected Time & Day")%>% shinyInput_label_embed(
                         icon("info") %>%
-                          bs_embed_tooltip(title = 'Select one of the 2 options and click "Compare Journeys". Both options will display a map with the Private car and Public Transport optimal routes. If "now" is selected, the map will also show live Parking availability near your destination while if "Selected Time & Day" is selected, the map will show historical Parking availability for the selected time and day.')),
+                          bs_embed_tooltip(title = 'Select one of the 2 options and click "Compare Journeys". Both options will display a map with the Private Vehicle and Public Transport optimal routes. If "now" is selected, the map will also show live Parking availability near your destination while if "Selected Time & Day" is selected, the map will show historical Parking availability for the selected time and day.')),
                       conditionalPanel(condition = "input.leaving == 'Selected Time & Day'",
                       selectInput(inputId = "day", label = "Day", choices = c('Monday','Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), selected = day_of_week),
                       selectInput(inputId = "hour", label = "Hour", choices = hours, selected= hour_now)),
