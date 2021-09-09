@@ -8,7 +8,7 @@ import math
 import random
 
 """
-All of this functions will be called within the Shiny app using the reticulate package to connect Python and R
+All of these functions will be called within the Shiny app using the reticulate package to connect Python and R
 
 """
 """
