@@ -6,6 +6,7 @@ library(shinyWidgets)
 library(shinyalert)
 library(lubridate)
 library(bsplus)
+library(shinyjs)
 
 options(shiny.sanitize.errors = FALSE)
 
@@ -93,12 +94,10 @@ ui <- dashboardPage(
                       br(),
                       textInput(inputId = "origin", label = "Origin", value = '', placeholder='Input a location within 20 km of the CBD...'),
                       textInput(inputId = "destination", label = "Destination", value = '', placeholder = 'Input a location in the CBD...'),
-                      sliderInput(inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =90, step=30)%>% shinyInput_label_embed(
-                        icon("info") %>%
-                          bs_embed_tooltip(title = 'How long are you planning on staying at the CBD? This information is relevant to calculate the estimated time to find a Parking Space as well as its cost.')),
-                      prettyRadioButtons(inputId="leaving", label="Leaving", choices=c("Now","Selected Time & Day"), selected ="Selected Time & Day")%>% shinyInput_label_embed(
-                        icon("info") %>%
-                          bs_embed_tooltip(title = 'Select one of the 2 options and click "Compare Journeys". Both options will display a map with the Private Vehicle and Public Transport optimal routes. If "now" is selected, the map will also show live Parking availability near your destination while if "Selected Time & Day" is selected, the map will show historical Parking availability for the selected time and day.')),
+                      sliderInput(inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =90, step=30),
+                      bsTooltip("length_of_stay", HTML("How long are you planning on staying at the CBD? <br />This information is relevant to calculate the estimated time to find a Parking Space as well as its cost."), placement = "top", trigger = "hover",options = NULL),
+                      prettyRadioButtons(inputId="leaving", label="Leaving", choices=c("Now","Selected Time & Day"), selected ="Selected Time & Day"),
+                      bsTooltip("leaving", HTML('Select one of the 2 options and click "Compare Journeys". Both options will display a map with the Private Vehicle and Public Transport optimal routes.<br />If "Now" is selected, the map will also show live Parking availability near your destination while if "Selected Time & Day" is selected, the map will show historical Parking availability for the selected time and day.'), placement = "top", trigger = "hover",options = NULL),
                       conditionalPanel(condition = "input.leaving == 'Selected Time & Day'",
                       selectInput(inputId = "day", label = "Day", choices = c('Monday','Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), selected = day_of_week),
                       selectInput(inputId = "hour", label = "Hour", choices = hours, selected= hour_now)),
@@ -175,6 +174,7 @@ ui <- dashboardPage(
                 <script src='https://maps.googleapis.com/maps/api/js?key=", key,"&libraries=places&callback=initAutocomplete' async defer></script>")),
                 
     # all the output elements
+    useShinyjs(),
     useShinyalert(),
     uiOutput("map_title"),
     uiOutput("map_legend"),
