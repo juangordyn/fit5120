@@ -8,6 +8,7 @@ library('lubridate')
 library('shinybusy')
 library('shinyalert')
 library('shinyBS')
+library('shinyjs')
 
 # server part of the Shiny app, where all the logic is handled
 
