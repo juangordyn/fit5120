@@ -7,6 +7,7 @@ library(shinyalert)
 library(lubridate)
 library(bsplus)
 library(shinyjs)
+library(shinyBS)
 
 options(shiny.sanitize.errors = FALSE)
 
