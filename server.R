@@ -307,18 +307,18 @@ stat_8 <- "Demand for public transport is set to increase by 89% in Australia by
 stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   # reactive values
   destination_reactive <- reactiveVal('')
@@ -366,7 +366,7 @@ server <- function(input, output, session){
   output$myMap <- renderGoogle_map({
     google_map(key = api_key,
                location = c(-37.8103, 144.9614),
-               zoom = 13,
+               zoom = 15,
                scale_control = TRUE, 
                height = 1000)})
   
@@ -394,8 +394,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    # python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    # reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -866,10 +866,10 @@ server <- function(input, output, session){
     count_disabled_parkings <- nrow(disabled_data_df)
     count_disabled_parkings_reactive(count_disabled_parkings)
     output$show_cost_statistics <- renderUI({
-      fluidRow(width = 12, valueBoxOutput("cost_private")  , valueBoxOutput("cost_public"), valueBoxOutput("parking_disabled"))})
+      fluidRow(width = 12, valueBoxOutput("cost_public")  , valueBoxOutput("cost_private"), valueBoxOutput("parking_disabled"))})
     if(nrow(disabled_data_df)>0){
       output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(min_distance_disabled_reactive(), format="d", big.mark=','),'mts'),'</center>', sep='')), HTML(paste('<center><b>to the closest parking space for people with disabilities</center><br /><center><button class="btn action-button" type="button" id="ExpandDisabledParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="triangle_down"></div></button></center>'), sep=''), icon = icon("wheelchair"),color = "purple")})
-      if(nrow(disabled_data_df)>2){
+      if(nrow(disabled_data_df)>4){
     google_map_update(map_id = "myMap") %>% clear_markers(layer_id='disabled_markers') %>%  add_markers(disabled_data_df, layer_id='disabled_markers', lat= 'mean_lat', lon= 'mean_long', marker_icon= 'disabled0.75.png', focus_layer=TRUE, mouse_over='hover_over')}
       else{
         google_map_update(map_id = "myMap") %>% clear_markers(layer_id='disabled_markers') %>%  add_markers(disabled_data_df, layer_id='disabled_markers', lat= 'mean_lat', lon= 'mean_long', marker_icon= 'disabled0.75.png', update_map_view=FALSE, mouse_over='hover_over')
