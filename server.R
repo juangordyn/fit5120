@@ -307,18 +307,18 @@ stat_8 <- "Demand for public transport is set to increase by 89% in Australia by
 stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   # reactive values
   destination_reactive <- reactiveVal('')
@@ -394,6 +394,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -584,7 +586,7 @@ server <- function(input, output, session){
                                       stroke_weight = 7,
                                       stroke_opacity = 0.7,
                                       info_window = "polyline_hover",
-                                      mouse_over = 'Private vehicle journey',
+                                      mouse_over = '<b>Private vehicle journey</b> <br />Click to see detail',
                                       load_interval = 100, update_map_view = FALSE)%>% 
               add_polylines(data = df_route_public,
                                       polyline = "route",
@@ -592,7 +594,7 @@ server <- function(input, output, session){
                                       stroke_weight = 7,
                                       stroke_opacity = 0.7,
                                       info_window = "polyline_hover",
-                                      mouse_over = 'Public transport journey',
+                                      mouse_over = '<b>Public transport journey</b> <br />Click to see detail',
                                       load_interval = 100, update_map_view = FALSE) %>% 
               add_circles(data=parking_data_reactive_complete(), lat='lat', lon='lon', 
                                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window='hover_over', mouse_over = 'hover_over', update_map_view = TRUE) %>% 
@@ -773,7 +775,7 @@ server <- function(input, output, session){
                         stroke_weight = 7,
                         stroke_opacity = 0.7,
                         info_window = "polyline_hover",
-                        mouse_over = 'Private vehicle journey',
+                        mouse_over = '<b>Private vehicle journey</b> <br />Click to see detail',
                         load_interval = 100,
                         update_map_view = FALSE)%>% 
           add_polylines(data = df_route_public,
@@ -782,7 +784,7 @@ server <- function(input, output, session){
                         stroke_weight = 7,
                         stroke_opacity = 0.7,
                         info_window = "polyline_hover",
-                        mouse_over = 'Public transport journey',
+                        mouse_over = '<b>Public transport journey</b> <br />Click to see detail',
                         load_interval = 100,
                         update_map_view = FALSE) %>% 
           add_circles(data=parking_data_reactive_complete(), lat='mean_lat', lon='mean_long', 
@@ -815,21 +817,21 @@ server <- function(input, output, session){
      }
     output$map_sliders <- renderUI({
       fluidRow(
-        column(4, align='center', sliderInput(inputId = "max_stay_map", label = HTML('<img src= "clock_32.png"><br /><br /><span class ="notbold">Length of stay in minutes</span>'), min = 30, max=240, value = input$length_of_stay, step=30)),   bsTooltip("max_stay_map", "Increase the time you will be staying at the CBD and see how the parkings that are not within your time limits turn yellow.", placement = "top", trigger = "hover",options = NULL),
-               column(2, align = 'center', actionButton("routes_zoom_out", "Zoom Out", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),column(2, align = 'center', actionButton("parking_zoom_in", "Zoom In", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")), column(4, align = 'center', sliderInput(inputId = "disabled_max_distance", label = HTML('<img src="disabled_32.png"><br /><br /><span class ="notbold">Distance in metres</span>'), min = 0, max=1000, value =0, step=250)),   bsTooltip("disabled_max_distance", "Retrieve all disability parking spaces on the map within the selected distance.", placement = "top", trigger = "hover",options = NULL))
+        column(4, align='center', sliderInput(inputId = "max_stay_map", label = HTML('<img src= "clock_32.png"><br /><br />Length of stay in minutes'), min = 30, max=240, value = length_of_stay_reactive(), step=30)),   bsTooltip("max_stay_map", HTML("Increase the time you will be staying at the CBD and see how the Parkings that are not within your time limits turn yellow. <br />Please note that this only has an effect on the map and not the statistics below. To update the statistics, click again on Compare Journeys."), placement = "top", trigger = "hover",options = NULL),
+               column(2, align = 'center', actionButton("routes_zoom_out", "Zoom Out", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),bsTooltip("routes_zoom_out", "Click here to have full view of the routes.", placement = "top", trigger = "hover",options = NULL), column(2, align = 'center', actionButton("parking_zoom_in", "Zoom In", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")), bsTooltip("parking_zoom_in", "Click here to set the zoom at Parking level.", placement = "top", trigger = "hover",options = NULL), column(4, align = 'center', sliderInput(inputId = "disabled_max_distance", label = HTML('<img src="disabled_32.png"><br /><br />Distance in metres'), min = 0, max=1000, value =0, step=250)),   bsTooltip("disabled_max_distance", "Retrieve all disability parking spaces on the map within the selected distance.", placement = "top", trigger = "hover",options = NULL))
                                                                                                                                                                                 
     })
     output$show_non_restricted <- renderUI({fluidRow(column(6,div(prettyCheckbox('restrictions_checkbox', 'Show only parkings within time restriction', FALSE), style = "color:#7E8BFA;font-family:verdana;")))})
     output$journey_icons <- renderUI({
-      fluidRow(width = 12, column(4,align = "center", img(src = "car_128.png", width = "25%", height = "25%")), column(4, align = "center", img(src = "bus_128.png", width = "25%", height = "25%")), column(4, align = "center", img(src = "parking_128.png", width = "25%", height = "25%")))})
+      fluidRow(width = 12, column(4,align = "center", img(src = "bus_128.png", width = "25%", height = "25%")), column(4, align = "center", img(src = "car_128.png", width = "25%", height = "25%")), column(4, align = "center", img(src = "parking_128.png", width = "25%", height = "25%")))})
     output$show_time_statistics <- renderUI({
-    fluidRow(width = 12, valueBoxOutput("time_private")  , valueBoxOutput("time_public"), valueBoxOutput("parking_stats"))})
+    fluidRow(width = 12, valueBoxOutput("time_public")  , valueBoxOutput("time_private"), valueBoxOutput("parking_stats"))})
     
     if(disabled_max_distance_reactive() !=0){
       output$show_cost_statistics <- renderUI({
-      fluidRow(width = 12, valueBoxOutput("cost_private")  , valueBoxOutput("cost_public"), valueBoxOutput("parking_disabled"))})}
+      fluidRow(width = 12, valueBoxOutput("cost_public")  , valueBoxOutput("cost_private"), valueBoxOutput("parking_disabled"))})}
     else{
-      output$show_cost_statistics <- renderUI({fluidRow(width = 12, valueBoxOutput("cost_private")  , valueBoxOutput("cost_public"))})
+      output$show_cost_statistics <- renderUI({fluidRow(width = 12, valueBoxOutput("cost_public")  , valueBoxOutput("cost_private"))})
     }
     
     output$show_public_benefits <- renderUI({
@@ -866,21 +868,33 @@ server <- function(input, output, session){
     output$show_cost_statistics <- renderUI({
       fluidRow(width = 12, valueBoxOutput("cost_private")  , valueBoxOutput("cost_public"), valueBoxOutput("parking_disabled"))})
     if(nrow(disabled_data_df)>0){
+      output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(min_distance_disabled_reactive(), format="d", big.mark=','),'mts'),'</center>', sep='')), HTML(paste('<center><b>to the closest parking space for people with disabilities</center><br /><center><button class="btn action-button" type="button" id="ExpandDisabledParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="triangle_down"></div></button></center>'), sep=''), icon = icon("wheelchair"),color = "purple")})
       if(nrow(disabled_data_df)>2){
     google_map_update(map_id = "myMap") %>% clear_markers(layer_id='disabled_markers') %>%  add_markers(disabled_data_df, layer_id='disabled_markers', lat= 'mean_lat', lon= 'mean_long', marker_icon= 'disabled0.75.png', focus_layer=TRUE, mouse_over='hover_over')}
       else{
         google_map_update(map_id = "myMap") %>% clear_markers(layer_id='disabled_markers') %>%  add_markers(disabled_data_df, layer_id='disabled_markers', lat= 'mean_lat', lon= 'mean_long', marker_icon= 'disabled0.75.png', update_map_view=FALSE, mouse_over='hover_over')
       }
-    }}
+    }
+    
     else{
       google_map_update(map_id = "myMap") %>% clear_markers(layer_id='disabled_markers')
       count_disabled_parkings_reactive(0)
+      click('parking_zoom_in')
+      output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(0, format="d", big.mark=',')),'</center>', sep='')), HTML(paste('<center><b>exclusive Parking spaces within ', input$disabled_max_distance, ' mts of the destination<b/></center>' ), sep=''), icon = icon("wheelchair"),color = "purple")})
+    }
+    
+    }
+    else{
+      google_map_update(map_id = "myMap") %>% clear_markers(layer_id='disabled_markers')
+      count_disabled_parkings_reactive(0)
+      click('parking_zoom_in')
+      output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(0, format="d", big.mark=',')),'</center>', sep='')), HTML(paste('<center><b>exclusive Parking spaces within ', input$disabled_max_distance, ' mts of the destination<b/></center>' ), sep=''), icon = icon("wheelchair"),color = "purple")})
     }
     })
   
   observeEvent(input$ExpandDisabledParking, {
     
-    output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(min_distance_disabled_reactive(), format="d", big.mark=','),'mts'),'</center>', sep='')), HTML(paste('<b>to the closest parking space for people with disabilities</b><br /><br /><b>',  count_disabled_parkings_reactive(), '</b> exclusive Parking spaces within ', input$disabled_max_distance, ' mts of the destination<br /><br /><center><button class="btn action-button" type="button" id="ContractDisabledParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="arrow-up"></div></button></center>'), sep=''), icon = icon("wheelchair"),color = "purple")})
+    output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(min_distance_disabled_reactive(), format="d", big.mark=','),'mts'),'</center>', sep='')), HTML(paste('<center><b>to the closest parking space for people with disabilities</b></center><br /><br /><b>',  count_disabled_parkings_reactive(), '</b> exclusive Parking spaces within ', input$disabled_max_distance, ' mts of the destination<br /><br /><center><button class="btn action-button" type="button" id="ContractDisabledParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="arrow-up"></div></button></center>'), sep=''), icon = icon("wheelchair"),color = "purple")})
     
   })
   
@@ -892,7 +906,7 @@ server <- function(input, output, session){
   
   observeEvent(input$ExpandParking, {
     
-    output$parking_stats <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(parking_occupation_reactive(), format="d", big.mark=','),'%'),'</center>', sep='')) , HTML(paste('<center><b>Parking Occupation</b></center><br />Find Parking Time: ', parking_time_reactive(), ' mins<br /><br />Parking Cost: $ ', parking_cost_reactive(), '<br /><br />Time restriction non-availability: ', time_restriction_ratio_reactive(),'%<br /><br />Parking fine probability: ', round(mean(parking_statistics_df_reactive()$fine_prob, na.rm=TRUE)), ' %<br /><br /><center><button class="btn action-button" type="button" id="ContractParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="arrow-up"></div></button></center>', sep='')), icon = icon("parking"),color = "purple")})
+    output$parking_stats <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(parking_occupation_reactive(), format="d", big.mark=','),'%'),'</center>', sep='')) , HTML(paste('<center><b>Parking Occupation</b></center><br />Find Parking Time: ', parking_time_reactive(), ' mins<br /><br />Parking Cost: $ ', parking_cost_reactive(), '<br /><br />Time restriction non-availability: ', time_restriction_ratio_reactive(),'%<br /><br />Parking fine probability*: ', round(mean(parking_statistics_df_reactive()$fine_prob, na.rm=TRUE)), ' %<br /><br /><br /><font size="-2">*Parking fine probability has been calculated as the proportion of vehicles that committed a parking infraction over the total vehicles that parked in that area for the selected time and day of the week, according to Historical data.</font><br /><br /><center><button class="btn action-button" type="button" id="ContractParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="arrow-up"></div></button></center>', sep='')), icon = icon("parking"),color = "purple")})
     
   })
   
@@ -948,6 +962,7 @@ observeEvent(input$buttonSeeLess, {
   })
   
   observeEvent(input$max_stay_map,{
+    updateSliderInput(session, inputId = "length_of_stay", label = "Length of stay (minutes)", min = 30, max=240, value =input$max_stay_map, step=30)
       if(input$restrictions_checkbox==TRUE){
         updatePrettyCheckbox(session, 'restrictions_checkbox', 'Show only parkings within time restriction', FALSE)
       }
@@ -957,7 +972,7 @@ observeEvent(input$buttonSeeLess, {
         # print(data)
         data$color <- mapply(define_color_parking, data$status, data$restricted)
         parking_data_reactive_complete(data)
-        parking_data_reactive_incomplete(data[data$maximum_stay>=input$max_stay_map, ])
+        parking_data_reactive_incomplete(data[data$color!='#ECC904', ])
         google_map_update(map_id = "myMap") %>% clear_circles %>%
           add_circles(data=data, lat='lat', lon='lon', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_over', mouse_over = 'hover_over',
@@ -970,7 +985,7 @@ observeEvent(input$buttonSeeLess, {
         if(day_reactive()!='Sunday' & ((as.POSIXct(time_reactive(), format='%H:%M')>as.POSIXct('7:30', format='%H:%M')&as.POSIXct(time_reactive(), format ='%H:%M')<as.POSIXct('18:30', format='%H:%M')))){
           parking_statistics_df_map[parking_statistics_df_map$maximum_stay<as.numeric(input$max_stay_map),'color']<-'#ECC904'}
         parking_data_reactive_complete(parking_statistics_df_map)
-        parking_data_reactive_incomplete(parking_statistics_df_map[parking_statistics_df_map$maximum_stay>=as.numeric(input$max_stay_map),])
+        parking_data_reactive_incomplete(parking_statistics_df_map[parking_statistics_df_map$color!='#ECC904',])
         google_map_update(map_id = "myMap") %>% clear_circles %>%
           add_circles(data=parking_statistics_df_map, lat='mean_lat', lon='mean_long', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information', mouse_over= 'hover_information',
@@ -987,7 +1002,7 @@ observeEvent(input$buttonSeeLess, {
                     stroke_weight = 7,
                     stroke_opacity = 0.7,
                     info_window = "polyline_hover",
-                    mouse_over = 'Private vehicle journey',
+                    mouse_over = '<b>Private vehicle journey</b> <br />Click to see detail',
                     load_interval = 100)%>% 
       add_polylines(data = df_route_public_reactive(),
                     polyline = "route",
@@ -995,7 +1010,7 @@ observeEvent(input$buttonSeeLess, {
                     stroke_weight = 7,
                     stroke_opacity = 0.7,
                     info_window = "polyline_hover",
-                    mouse_over = 'Public transport journey',
+                    mouse_over = '<b>Public transport journey</b> <br />Click to see detail',
                     load_interval = 100)
   })
   
