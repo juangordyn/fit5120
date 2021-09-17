@@ -312,18 +312,18 @@ stat_8 <- "Demand for public transport is set to increase by 89% in Australia by
 stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  #python_path = Sys.getenv('PYTHON_PATH')
-  #reticulate::use_python(python_path)
-  #reticulate::use_virtualenv(virtualenv_dir, required = T)
+  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  python_path = Sys.getenv('PYTHON_PATH')
+  reticulate::use_python(python_path)
+  reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   # reactive values
   destination_reactive <- reactiveVal('')
@@ -396,8 +396,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -802,8 +802,6 @@ server <- function(input, output, session){
         
         if(first_time_map() == 0){
           print('first_time')
-          google_map_update(map_id = "myMap") %>% 
-            clear_polylines() %>% clear_circles %>% clear_markers
             
           google_map_update(map_id = "myMap") %>% add_polylines(data = df_route,
                           polyline = "route",
