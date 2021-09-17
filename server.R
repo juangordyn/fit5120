@@ -580,7 +580,6 @@ server <- function(input, output, session){
         
        # google map displaying live parking data and routes
         if(first_time_map() == 0){
-          print('first_time')
           output$myMap <- renderGoogle_map({
             google_map(key = api_key,
                        location = c(-37.8103, 144.9614),
@@ -778,7 +777,6 @@ server <- function(input, output, session){
         df_route_public_reactive(df_route_public)
         
         if(first_time_map() == 0){
-          print('first_time')
           output$myMap <- renderGoogle_map({
             google_map(key = api_key,
                        location = c(-37.8103, 144.9614),
