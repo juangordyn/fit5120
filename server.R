@@ -310,18 +310,26 @@ stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7,
 restart_session <- 0
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
+  
+  stop_session_initial <- reactiveVal(0)
+  observe({if(stop_session_initial() == 0){
+  session$onSessionEnded(function(){
+    isolate(restart_session <<- 0)
+    print(restart_session)
+  })}})
+  
   if(restart_session == 0){
     # google map
     output$myMap <- renderGoogle_map({
@@ -331,9 +339,9 @@ server <- function(input, output, session){
                  scale_control = TRUE, 
                  height = 1000)})
     observe({
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     random_stat <- sample(stats_while_waiting, 1)
     show_modal_spinner(text = HTML(paste('<br />While the application is loading, did you know that...<br /><br/><b>', random_stat, '</b>', sep='')))
     destination_reactive <- reactiveVal('')
@@ -586,6 +594,7 @@ server <- function(input, output, session){
     })
     
   restart_session <<- 1
+  stop_session_initial(1)
   remove_modal_spinner()
   session$reload()
   }
@@ -613,6 +622,7 @@ server <- function(input, output, session){
   
   
   else{
+    stop_session_initial(0)
   # reactive values
   destination_reactive <- reactiveVal('')
   origin_reactive <- reactiveVal('')
@@ -687,8 +697,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
