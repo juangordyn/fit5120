@@ -1,11 +1,10 @@
 library('jsonlite')
 library('request')
 library('geosphere')
-library('tidyverse')
 library('googleway')
 library('colorRamps')
 library('lubridate')
-library('shinybusy')
+library('shinybusy') 
 library('shinyalert')
 library('shinyBS')
 
@@ -35,7 +34,9 @@ wrangle_sensor_live_data <- function(max_walk, length_of_stay, end_lng, end_lat)
   sensor_live_df <- sensor_live_df[!duplicated(sensor_live_df$marker_id), ]
   min_max_stay <- min(sensor_live_df$maximum_stay, na.rm = TRUE)
   max_cost <- max(sensor_live_df$cost_per_hour, na.rm = TRUE)
-  sensor_live_df <- sensor_live_df %>% replace_na(list('maximum_stay' = min_max_stay, 'cost_per_hour' = max_cost))
+  sensor_live_df[is.na(sensor_live_df$maximum_stay), 'maximum_stay'] <- min_max_stay
+  sensor_live_df[is.na(sensor_live_df$cost_per_hour), 'cost_per_hour'] <- max_cost
+  # sensor_live_df <- sensor_live_df %>% replace_na(list('maximum_stay' = min_max_stay, 'cost_per_hour' = max_cost))
   dist_vector <- c()
   for(i in 1:nrow(sensor_live_df)){
     dist_haversine <- distHaversine(c(end_lng, end_lat), c(as.numeric(sensor_live_df[i, 'lon']),as.numeric(sensor_live_df[i, 'lat'])))
@@ -243,7 +244,7 @@ show_disabled <- function(disabled_data_df, dest_lat, dest_lng, max_dist){
   disabled_data_df[i, 'hover_over'] <- paste(address, '<br />', 'Distance from destination: ', round(dist), ' mts')
   
   }
-  disabled_data_subset <- disabled_data_df %>% filter(dist<=max_dist)
+  disabled_data_subset <- disabled_data_df[disabled_data_df$dist<=max_dist, ]
   return(disabled_data_subset)
 }
 
@@ -309,18 +310,18 @@ stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7,
 restart_session <- 0
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
-  
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
   if(restart_session == 0){
     # google map
     output$myMap <- renderGoogle_map({
@@ -330,9 +331,9 @@ server <- function(input, output, session){
                  scale_control = TRUE, 
                  height = 1000)})
     observe({
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     random_stat <- sample(stats_while_waiting, 1)
     show_modal_spinner(text = HTML(paste('<br />While the application is loading, did you know that...<br /><br/><b>', random_stat, '</b>', sep='')))
     destination_reactive <- reactiveVal('')
@@ -686,8 +687,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
