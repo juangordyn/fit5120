@@ -309,8 +309,7 @@ stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7,
 restart_session <- 0
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
-
+VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
 Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
 Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
