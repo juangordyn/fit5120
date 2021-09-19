@@ -307,323 +307,27 @@ stat_8 <- "Demand for public transport is set to increase by 89% in Australia by
 
 stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
 
-restart_session <- 0
+restart_session <<- 0
+google_map_initial <<-     google_map(key = api_key,
+                                      location = c(-37.8103, 144.9614),
+                                      zoom = 15,
+                                      scale_control = TRUE, 
+                                      height = 1000)
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
   
-  stop_session_initial <- reactiveVal(0)
-  observe({if(stop_session_initial() == 0){
-  session$onSessionEnded(function(){
-    isolate(restart_session <<- 0)
-    print(restart_session)
-  })}})
-  
-  if(restart_session == 0){
-    # google map
-    output$myMap <- renderGoogle_map({
-      google_map(key = api_key,
-                 location = c(-37.8103, 144.9614),
-                 zoom = 15,
-                 scale_control = TRUE, 
-                 height = 1000)})
-    observe({
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
-    reticulate::source_python("python_helper_functions.py")
-    random_stat <- sample(stats_while_waiting, 1)
-    show_modal_spinner(text = HTML(paste('<br />While the application is loading, did you know that...<br /><br/><b>', random_stat, '</b>', sep='')))
-    destination_reactive <- reactiveVal('')
-    origin_reactive <- reactiveVal('')
-    max_walk_reactive <- reactiveVal('')
-    length_of_stay_reactive <- reactiveVal('')
-    time_reactive <- reactiveVal('')
-    day_reactive <- reactiveVal('')
-    input_live_reactive <- reactiveVal('')
-    map_to_display_reactive <- reactiveVal('')
-    parking_data_reactive_complete <- reactiveVal('')
-    parking_data_reactive_incomplete <- reactiveVal('')
-    public_steps_long <- reactiveVal()
-    public_steps_short <- reactiveVal()
-    total_time_public_reactive <- reactiveVal()
-    sensor_live_df_reactive <- reactiveVal('')
-    parking_statistics_df_reactive <- reactiveVal('No results')
-    car_direction_status_reactive <- reactiveVal('NOT FOUND')
-    cbd_distance_reactive <- reactiveVal(3500)
-    journey_distance_reactive <- reactiveVal(21000)
-    total_time_private_reactive <- reactiveVal()
-    time_steps_private_reactive <- reactiveVal()
-    parking_occupation_reactive <- reactiveVal()
-    parking_time_reactive <- reactiveVal()
-    parking_cost_reactive <- reactiveVal()
-    parking_distance_reactive <- reactiveVal()
-    walking_time_reactive <- reactiveVal()
-    driving_cost_reactive <- reactiveVal()
-    time_restriction_ratio_reactive <- reactiveVal()
-    public_transport_cost_reactive <- reactiveVal()
-    total_private_cost_reactive <- reactiveVal()
-    has_tolls_reactive <- reactiveVal('')
-    map_title_reactive <- reactiveVal()
-    dest_lat_reactive <- reactiveVal()
-    dest_lon_reactive <- reactiveVal()
-    svals_reactive <- reactiveVal()
-    min_distance_disabled_reactive <- reactiveVal()
-    count_disabled_parkings_reactive <- reactiveVal()
-    disabled_max_distance_reactive <- reactiveVal(0)
-    df_route_private_reactive <- reactiveVal()
-    df_route_public_reactive <- reactiveVal()
-    leaving_reactive <- reactiveVal()
-    
-    origin_reactive('322 Duke Street, Sunshine North VIC, Australia')
-    destination_reactive('Queen Victoria Market, Queen Street, Melbourne VIC, Australia')
-    length_of_stay_reactive(90)
-    max_walk_reactive(300)
-    time_reactive(input$hour)
-    day_reactive(input$day)
-    
-    car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', 'now', 'pessimistic')
-    # checking if the journey has tolls
-    has_tolls <- has_toll_funct(car_directions)
-    has_tolls_reactive(has_tolls)
-    
-    # if no result ask user to input address again
-    car_direction_status_reactive(car_directions$status)
-    if(car_directions$status=='ZERO_RESULTS'| car_directions$status=='NOT_FOUND'){
-      remove_modal_spinner()
-      shinyalert(title = "Please check your input addresses", type = "error")
-      
-    }
-    else{
-      # lats and longs
-      # show_modal_spinner(text = 'This might take a little while...')
-      end_lat <- car_directions$routes$legs[[1]]$end_location$lat
-      end_lng <- car_directions$routes$legs[[1]]$end_location$lng
-      dest_lat_reactive(end_lat)
-      dest_lon_reactive(end_lng)
-      start_lat <- car_directions$routes$legs[[1]]$start_location$lat
-      start_lng<- car_directions$routes$legs[[1]]$start_location$lng
-      
-      print(end_lat)
-      print(end_lng)
-      cbd_centre_lat <- -37.811871
-      cbd_centre_lng <- 144.96478
-      # check if destination is within cbd
-      cbd_distance <- distHaversine(c(end_lng, end_lat), c(cbd_centre_lng, cbd_centre_lat))
-      cbd_distance_reactive(cbd_distance)
-      # cbd limit is 1.5 km from the center
-      if(cbd_distance>2500){
-        
-        remove_modal_spinner()
-        shinyalert(title = "Your destination address is outside Melbourne CBD", type = "error")
-        
-        
-      }
-      
-      else{
-        journey_distance <- distHaversine(c(end_lng, end_lat), c(start_lng, start_lat))
-        journey_distance_reactive(journey_distance)
-        
-        # we only allow journeys of 20 km or less from the CBD
-        if (journey_distance >20000){
-          remove_modal_spinner()
-          shinyalert(title = "Your origin address is not within a 20 km radius of the CBD", type = "error")
-          
-        }
-        else{
-          # public trasnport journey calculation
-          public_transport_directions <- directions(origin_reactive(), destination_reactive(), 'transit', 'now', 'best_guess')
-          df_route_public <- retrieve_route_public(public_transport_directions)
-          
-          df_destination <- cbind(
-            car_directions$routes$legs[[1]]$end_location,
-            data.frame(address = car_directions$routes$legs[[1]]$end_address))
-          
-          # mixing parking data with journey results
-          sensor_live_df_map <- wrangle_sensor_live_data(max_walk_reactive(), length_of_stay_reactive(), end_lng, end_lat)
-          if(sensor_live_df_map=='No results'){
-            remove_modal_spinner()
-            shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
-            
-          }
-          else{
-            marker_ids <- unique(sensor_live_df_map$marker_id)
-            now <- with_tz(Sys.time(), 'Australia/Melbourne')
-            minutes <- as.character(minute(now))
-            if(nchar(minutes) < 2){
-              minutes <- paste('0',minutes, sep='')
-            }
-            hour_now <- as.character(hour(now))
-            time <- paste(hour_now,':',minutes, sep='')
-            day_of_week <- wday(with_tz(Sys.time(), 'Australia/Melbourne'))
-            days_of_week <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')
-            day_of_week <- days_of_week[day_of_week]
-            
-            start_time <- with_tz(Sys.time(), 'Australia/Melbourne')
-            parking_statistics_df <- calculate_parking_statistics(end_lat, end_lng, as.integer(length_of_stay_reactive()), as.integer(max_walk_reactive()), time, day_of_week)
-            parking_statistics_df_reactive(parking_statistics_df)
-            if (parking_statistics_df == 'No results'){
-              remove_modal_spinner()
-              shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
-              
-            }
-            else{
-              sensor_live_df <- merge(x=sensor_live_df_map, y=parking_statistics_df, by = 'marker_id')
-              
-              if(nrow(sensor_live_df)==0){
-                sensor_live_df_reactive('No results')
-                sensor_live_df_reactive('No results')
-                remove_modal_spinner()
-                shinyalert(title = "We don't have Parking Data for this particular destination. Please select another destination.", type = "error")
-                
-              }
-              else{
-                sensor_live_df$avg_vacancy <- round(sensor_live_df$avg_vacancy)
-                sensor_live_df$avg_occupation <- round(sensor_live_df$avg_occupation)
-                
-                for(i in 1:nrow(sensor_live_df)){
-                  vehiclepresent <- sensor_live_df[i, 'status']
-                  hover_text <- sensor_live_df[i, 'hover_over']
-                  if(vehiclepresent=='Occupied'){
-                    occupation_time <- sensor_live_df[i, 'avg_occupation']
-                    sensor_live_df[i, 'hover_over'] <- paste(hover_text, '<br />Avg. occupation (minutes): ', occupation_time, sep='')
-                  }
-                  else{
-                    vacancy_time <- sensor_live_df[i, 'avg_vacancy']
-                    sensor_live_df[i, 'hover_over'] <- paste(hover_text, '<br />Avg. vacancy (minutes): ', vacancy_time, sep='')
-                  }
-                  
-                }
-                parking_data_reactive_complete(sensor_live_df_map)
-                parking_data_reactive_incomplete(sensor_live_df_map[sensor_live_df_map$color!='#ECC904', ])
-                # statistics to print in Dashboard
-                parking_occupation <- round(mean(sensor_live_df[, 'occupation_ratio' ]))
-                parking_occupation_reactive(parking_occupation)
-                time_restriction_ratio <- round((nrow(sensor_live_df[sensor_live_df$color=='#ECC904', ])/nrow(sensor_live_df))*100)
-                time_restriction_ratio_reactive(time_restriction_ratio)
-                parking_hourly_cost <- sensor_live_df[, 'parking_cost'][1]
-                if(parking_hourly_cost>10){
-                  parking_hourly_cost <- parking_hourly_cost/100
-                }
-                parking_cost <- parking_cost_calculator(day_of_week, time, parking_hourly_cost, length_of_stay_reactive())
-                parking_cost_reactive(parking_cost)
-                parking_time <- sensor_live_df[, 'parking_time'][1]
-                parking_time_reactive(parking_time)
-                parking_distance <- sensor_live_df[, 'parking_distance'][1]
-                parking_distance_reactive(parking_distance)
-                walking_time <- sensor_live_df[, 'walking_time'][1]
-                walking_time_reactive(walking_time)
-                car_duration = round((car_directions$routes$legs[[1]]$duration$value)/60)
-                total_time_private <- car_duration + parking_time + walking_time
-                total_time_private_reactive(total_time_private)
-                total_time_public <- round(sum(public_transport_directions$routes$legs[[1]]$steps[[1]]$duration$value)/60)
-                total_time_public_reactive(total_time_public)
-                # private vehicle costs
-                car_distance = car_directions$routes$legs[[1]]$distance$value
-                petrol_cost_per_litre = 1.27
-                avg_fuel_consumption_l_per_km = 0.5
-                driving_cost = round((car_distance/1000)*avg_fuel_consumption_l_per_km*petrol_cost_per_litre)
-                driving_cost_reactive(driving_cost)
-                total_private_cost = driving_cost + parking_cost
-                total_private_cost_reactive(total_private_cost)
-                
-                # public transport costs
-                public_transport_cost <- transport_cost_calculator(time_reactive())
-                public_transport_cost_reactive(public_transport_cost)
-                
-                # what to display when clicking on routes
-                df_route <- retrieve_route_private(car_directions, parking_time, parking_distance, walking_time)
-                time_steps_private <- df_route[, 'polyline_hover'][1]
-                time_steps_private_reactive(time_steps_private)
-                time_steps_public <- df_route_public[, 'polyline_hover'][1]
-                time_steps_public_short <-df_route_public[, 'polyline_hover_short'][1]
-                public_steps_long(time_steps_public)
-                public_steps_short(time_steps_public_short)
-                df_route_public$polyline_hover <- gsub('bus_32_white', 'bus_32', df_route_public$polyline_hover)
-                df_route_public$polyline_hover <- gsub('pedestrian_32_white', 'pedestrian_32', df_route_public$polyline_hover)
-                df_route$polyline_hover <- gsub('car_32_white', 'car_32', df_route$polyline_hover)
-                df_route$polyline_hover <- gsub('parking_32_white', 'parking_32', df_route$polyline_hover)
-                df_route$polyline_hover <- gsub('pedestrian_32_white', 'pedestrian_32', df_route$polyline_hover)
-                df_route_private_reactive(df_route)
-                df_route_public_reactive(df_route_public)
-                
-                # google map displaying live parking data and routes
-                google_map_update(map_id = "myMap") %>% 
-                  clear_polylines() %>% clear_circles %>% clear_markers %>% 
-                  add_polylines(data = df_route,
-                                polyline = "route",
-                                stroke_colour = '#F95E1B',
-                                stroke_weight = 7,
-                                stroke_opacity = 0.7,
-                                info_window = "polyline_hover",
-                                mouse_over = '<b>Private vehicle journey</b> <br />Click to see detail',
-                                load_interval = 100, update_map_view = FALSE)%>% 
-                  add_polylines(data = df_route_public,
-                                polyline = "route",
-                                stroke_colour = '#54C785',
-                                stroke_weight = 7,
-                                stroke_opacity = 0.7,
-                                info_window = "polyline_hover",
-                                mouse_over = '<b>Public transport journey</b> <br />Click to see detail',
-                                load_interval = 100, update_map_view = FALSE) %>% 
-                  add_circles(data=parking_data_reactive_complete(), lat='lat', lon='lon', 
-                              fill_colour='color', radius = 20, stroke_colour= 'color', info_window='hover_over', mouse_over = 'hover_over', update_map_view = TRUE) %>% 
-                  add_markers(data=df_destination, info_window = "address")
-                map_title <- 'Public vs Private Journey including Real-Time Parking Availability'
-                map_title_reactive(map_title)
-                end_time <- with_tz(Sys.time(), 'Australia/Melbourne')
-                print(end_time-start_time)
-                remove_modal_spinner()
-                
-              }
-            }
-          }
-        }
-      }
-    }
-    })
-    
-  restart_session <<- 1
-  stop_session_initial(1)
-  remove_modal_spinner()
-  session$reload()
-  }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  else{
-    stop_session_initial(0)
-  # reactive values
   destination_reactive <- reactiveVal('')
   origin_reactive <- reactiveVal('')
   max_walk_reactive <- reactiveVal('')
@@ -667,11 +371,7 @@ server <- function(input, output, session){
   
   # google map
   output$myMap <- renderGoogle_map({
-    google_map(key = api_key,
-               location = c(-37.8103, 144.9614),
-               zoom = 15,
-               scale_control = TRUE, 
-               height = 1000)})
+                  google_map_initial})
   
   # what happens when we click on Compare Journeys
   observeEvent(input$compare_journeys,{
@@ -697,8 +397,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -1389,4 +1089,3 @@ observeEvent(input$buttonSeeLess, {
   })
   
   }
-}
