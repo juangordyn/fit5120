@@ -307,25 +307,20 @@ stat_8 <- "Demand for public transport is set to increase by 89% in Australia by
 
 stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
 
-google_map_initial <<-     google_map(key = api_key,
-                                      location = c(-37.8103, 144.9614),
-                                      zoom = 15,
-                                      scale_control = TRUE, 
-                                      height = 1000)
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   destination_reactive <- reactiveVal('')
   origin_reactive <- reactiveVal('')
@@ -367,13 +362,29 @@ server <- function(input, output, session){
   df_route_private_reactive <- reactiveVal()
   df_route_public_reactive <- reactiveVal()
   leaving_reactive <- reactiveVal()
+  display_map_reactive <- reactiveVal(0)
+  first_time_map_reactive <- reactiveVal(0)
   
   # google map
-  output$myMap <- renderGoogle_map({
-                  google_map_initial})
+  output$myInitialMap <- renderGoogle_map({
+    google_map(key = api_key,
+               location = c(-37.8103, 144.9614),
+               zoom = 15,
+               scale_control = TRUE, 
+               height = 1000)})
+  
+  observe({
+    if(display_map_reactive()==0){
+    output$maps <- renderUI({google_mapOutput("myInitialMap")})
+  }
+  else{
+    output$maps <- renderUI({google_mapOutput("myMap")})
+  }
+  })
   
   # what happens when we click on Compare Journeys
   observeEvent(input$compare_journeys,{
+    display_map_reactive(1)
     leaving_reactive(input$leaving)
     random_stat <- sample(stats_while_waiting, 1)
     show_modal_spinner(text = HTML(paste('<br />While you wait, did you know that...<br /><br/><b>', random_stat, '</b>', sep='')))
@@ -396,8 +407,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -580,8 +591,14 @@ server <- function(input, output, session){
         df_route_public_reactive(df_route_public)
         
        # google map displaying live parking data and routes
-      google_map_update(map_id = "myMap") %>% 
-        clear_polylines() %>% clear_circles() %>% clear_markers() %>% 
+        
+      if(first_time_map_reactive() == 0){
+      output$myMap <- renderGoogle_map({
+      google_map(key = api_key,
+                 location = c(-37.8103, 144.9614),
+                 zoom = 15,
+                 scale_control = TRUE, 
+                 height = 1000) %>%
               add_polylines(data = df_route,
                                       polyline = "route",
                                       stroke_colour = '#F95E1B',
@@ -601,6 +618,32 @@ server <- function(input, output, session){
               add_circles(data=parking_data_reactive_complete(), lat='lat', lon='lon', 
                                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window='hover_over', mouse_over = 'hover_over', update_map_view = TRUE) %>% 
         add_markers(data=df_destination, info_window = "address")
+        })
+      first_time_map_reactive(1)
+      }
+      else{
+        google_map_update(map_id = "myMap") %>% 
+        clear_polylines() %>% clear_circles() %>% clear_markers() %>% 
+          add_polylines(data = df_route,
+                        polyline = "route",
+                        stroke_colour = '#F95E1B',
+                        stroke_weight = 7,
+                        stroke_opacity = 0.7,
+                        info_window = "polyline_hover",
+                        mouse_over = '<b>Private vehicle journey</b> <br />Click to see detail',
+                        load_interval = 100, update_map_view = FALSE)%>% 
+          add_polylines(data = df_route_public,
+                        polyline = "route",
+                        stroke_colour = '#54C785',
+                        stroke_weight = 7,
+                        stroke_opacity = 0.7,
+                        info_window = "polyline_hover",
+                        mouse_over = '<b>Public transport journey</b> <br />Click to see detail',
+                        load_interval = 100, update_map_view = FALSE) %>% 
+          add_circles(data=parking_data_reactive_complete(), lat='lat', lon='lon', 
+                      fill_colour='color', radius = 20, stroke_colour= 'color', info_window='hover_over', mouse_over = 'hover_over', update_map_view = TRUE) %>% 
+          add_markers(data=df_destination, info_window = "address")
+      }
       map_title <- 'Public vs Private Journey including Real-Time Parking Availability'
       map_title_reactive(map_title)
       end_time <- with_tz(Sys.time(), 'Australia/Melbourne')
@@ -768,9 +811,13 @@ server <- function(input, output, session){
         df_route_private_reactive(df_route)
         df_route_public_reactive(df_route_public)
         
-        # map showing historical parking data
-        google_map_update(map_id = "myMap") %>% 
-          clear_polylines() %>% clear_circles() %>% clear_markers() %>% 
+        if(first_time_map_reactive() == 0){
+        output$myMap <- renderGoogle_map({
+          google_map(key = api_key,
+                     location = c(-37.8103, 144.9614),
+                     zoom = 15,
+                     scale_control = TRUE, 
+                     height = 1000) %>% 
           add_polylines(data = df_route,
                         polyline = "route",
                         stroke_colour = '#F95E1B',
@@ -791,7 +838,34 @@ server <- function(input, output, session){
                         update_map_view = FALSE) %>% 
           add_circles(data=parking_data_reactive_complete(), lat='mean_lat', lon='mean_long', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information', mouse_over = 'hover_information', update_map_view = TRUE) %>%
-          add_markers(data=df_destination, info_window = "address", update_map_view = FALSE)
+          add_markers(data=df_destination, info_window = "address", update_map_view = FALSE)})
+          first_time_map_reactive(1)
+        }
+        else{
+          google_map_update(map_id = "myMap") %>%
+          clear_polylines() %>% clear_circles() %>% clear_markers() %>% 
+            add_polylines(data = df_route,
+                          polyline = "route",
+                          stroke_colour = '#F95E1B',
+                          stroke_weight = 7,
+                          stroke_opacity = 0.7,
+                          info_window = "polyline_hover",
+                          mouse_over = '<b>Private vehicle journey</b> <br />Click to see detail',
+                          load_interval = 100,
+                          update_map_view = FALSE)%>% 
+            add_polylines(data = df_route_public,
+                          polyline = "route",
+                          stroke_colour = '#54C785',
+                          stroke_weight = 7,
+                          stroke_opacity = 0.7,
+                          info_window = "polyline_hover",
+                          mouse_over = '<b>Public transport journey</b> <br />Click to see detail',
+                          load_interval = 100,
+                          update_map_view = FALSE) %>% 
+            add_circles(data=parking_data_reactive_complete(), lat='mean_lat', lon='mean_long', 
+                        fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information', mouse_over = 'hover_information', update_map_view = TRUE) %>%
+            add_markers(data=df_destination, info_window = "address", update_map_view = FALSE)
+        }
         map_title <- 'Public vs Private Journey including Historical Parking Availability'
         map_title_reactive(map_title)
         remove_modal_spinner()
