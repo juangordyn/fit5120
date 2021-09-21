@@ -307,7 +307,6 @@ stat_8 <- "Demand for public transport is set to increase by 89% in Australia by
 
 stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7, stat_8)
 
-restart_session <<- 0
 google_map_initial <<-     google_map(key = api_key,
                                       location = c(-37.8103, 144.9614),
                                       zoom = 15,
@@ -315,18 +314,18 @@ google_map_initial <<-     google_map(key = api_key,
                                       height = 1000)
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   destination_reactive <- reactiveVal('')
   origin_reactive <- reactiveVal('')
@@ -397,8 +396,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -582,7 +581,7 @@ server <- function(input, output, session){
         
        # google map displaying live parking data and routes
       google_map_update(map_id = "myMap") %>% 
-        clear_polylines() %>% clear_circles %>% clear_markers %>% 
+        clear_polylines() %>% clear_circles() %>% clear_markers() %>% 
               add_polylines(data = df_route,
                                       polyline = "route",
                                       stroke_colour = '#F95E1B',
@@ -771,7 +770,7 @@ server <- function(input, output, session){
         
         # map showing historical parking data
         google_map_update(map_id = "myMap") %>% 
-          clear_polylines() %>% clear_circles %>% clear_markers %>% 
+          clear_polylines() %>% clear_circles() %>% clear_markers() %>% 
           add_polylines(data = df_route,
                         polyline = "route",
                         stroke_colour = '#F95E1B',
@@ -976,7 +975,7 @@ observeEvent(input$buttonSeeLess, {
         data$color <- mapply(define_color_parking, data$status, data$restricted)
         parking_data_reactive_complete(data)
         parking_data_reactive_incomplete(data[data$color!='#ECC904', ])
-        google_map_update(map_id = "myMap") %>% clear_circles %>%
+        google_map_update(map_id = "myMap") %>% clear_circles() %>%
           add_circles(data=data, lat='lat', lon='lon', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_over', mouse_over = 'hover_over',
                       update_map_view=FALSE)
@@ -989,7 +988,7 @@ observeEvent(input$buttonSeeLess, {
           parking_statistics_df_map[parking_statistics_df_map$maximum_stay<as.numeric(input$max_stay_map),'color']<-'#ECC904'}
         parking_data_reactive_complete(parking_statistics_df_map)
         parking_data_reactive_incomplete(parking_statistics_df_map[parking_statistics_df_map$color!='#ECC904',])
-        google_map_update(map_id = "myMap") %>% clear_circles %>%
+        google_map_update(map_id = "myMap") %>% clear_circles() %>%
           add_circles(data=parking_statistics_df_map, lat='mean_lat', lon='mean_long', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information', mouse_over= 'hover_information',
                       update_map_view=FALSE)
@@ -1053,33 +1052,33 @@ observeEvent(input$buttonSeeLess, {
     if(input$restrictions_checkbox==TRUE){
       if(nrow(parking_data_reactive_incomplete())>0){
         if(leaving_reactive()=='Now'){
-          google_map_update(map_id = "myMap") %>% clear_circles %>%
+          google_map_update(map_id = "myMap") %>% clear_circles() %>%
             add_circles(data=parking_data_reactive_incomplete(), lat='lat', lon='lon', 
                         fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_over', mouse_over= 'hover_over', update_map_view=FALSE)}
         else{
           if(day_reactive()!='Sunday' & ((as.POSIXct(time_reactive(), format='%H:%M')>as.POSIXct('7:30', format='%H:%M')&as.POSIXct(time_reactive(), format ='%H:%M')<as.POSIXct('18:30', format='%H:%M')))){
-          google_map_update(map_id = "myMap") %>% clear_circles %>%
+          google_map_update(map_id = "myMap") %>% clear_circles() %>%
             add_circles(data=parking_data_reactive_incomplete(), lat='mean_lat', lon='mean_long', 
                         fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information', mouse_over= 'hover_information', update_map_view=FALSE)
         }}
       }
       
       else{
-        google_map_update(map_id = "myMap") %>% clear_circles
+        google_map_update(map_id = "myMap") %>% clear_circles()
       }
       
       }
     
     else{
       if(leaving_reactive()=='Now'){
-        google_map_update(map_id = "myMap") %>% clear_circles %>%
+        google_map_update(map_id = "myMap") %>% clear_circles() %>%
           add_circles(data=parking_data_reactive_complete(), lat='lat', lon='lon', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_over', mouse_over = 'hover_over',
                       update_map_view=FALSE)
         }
       else{
         if(day_reactive()!='Sunday' & ((as.POSIXct(time_reactive(), format='%H:%M')>as.POSIXct('7:30', format='%H:%M')&as.POSIXct(time_reactive(), format ='%H:%M')<as.POSIXct('18:30', format='%H:%M')))){
-        google_map_update(map_id = "myMap") %>% clear_circles %>%
+        google_map_update(map_id = "myMap") %>% clear_circles() %>%
           add_circles(data=parking_data_reactive_complete(), lat='mean_lat', lon='mean_long', 
                       fill_colour='color', radius = 20, stroke_colour= 'color', info_window = 'hover_information', mouse_over= 'hover_information',
                       update_map_view=FALSE)
