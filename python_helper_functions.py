@@ -77,9 +77,9 @@ def query_statistics(all_sensors_df, destination_lat, destination_long, length_o
     marker_id_unique = parking_df.marker_id.unique()
     marker_id_set = set(marker_id_unique)
     marker_common = marker_id_set.intersection(full_marker_ids_set)
-    if len(marker_common) > 50:
+    if len(marker_common) > 100:
         random.seed(10)
-        marker_ids_sample = random.sample(marker_common, 50)
+        marker_ids_sample = random.sample(marker_common, 100)
     else:
         marker_ids_sample = marker_common
     marker_id_tuples = str(tuple(marker_ids_sample))
