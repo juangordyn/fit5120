@@ -297,8 +297,8 @@ public_benefits <- function(total_time_public, total_time_private, total_cost_pu
 }
 
 stat_1 <- 'Australia was ranked second-worst in transport energy efficiency in 2019.'
-stat_2 <- "Transport is Australia's third largest source of greenhouse gas emissions."
-stat_3 <- "Cars are responsible for roughly half of Australia's transport emissions."
+stat_2 <- "Transport is Australia's second largest source of greenhouse gas emissions."
+stat_3 <- "Cars are responsible for more than half of Australia's transport emissions."
 stat_4 <- "After lockdown, car trips to Melbourne's CBD could increase by 33%."
 stat_5 <- "Daily, more than 300,000 car trips are made to Melbourne's CBD."
 stat_6 <- "Spencer St. has recorded a 20% increase in Traffic congestion levels since 2018."
@@ -309,18 +309,18 @@ stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7,
 
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   destination_reactive <- reactiveVal('')
   origin_reactive <- reactiveVal('')
@@ -384,13 +384,12 @@ server <- function(input, output, session){
   
   # what happens when we click on Compare Journeys
   observeEvent(input$compare_journeys,{
-    display_map_reactive(1)
     leaving_reactive(input$leaving)
     random_stat <- sample(stats_while_waiting, 1)
     show_modal_spinner(text = HTML(paste('<br />While you wait, did you know that...<br /><br/><b>', random_stat, '</b>', sep='')))
     
     # initializing all the reactive values
-    max_walk_reactive(500)
+    max_walk_reactive(600)
     length_of_stay_reactive(input$length_of_stay)
     time_reactive(input$hour)
     day_reactive(input$day)
@@ -407,8 +406,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -591,7 +590,7 @@ server <- function(input, output, session){
         df_route_public_reactive(df_route_public)
         
        # google map displaying live parking data and routes
-        
+      display_map_reactive(1)
       if(first_time_map_reactive() == 0){
       output$myMap <- renderGoogle_map({
       google_map(key = api_key,
@@ -811,6 +810,7 @@ server <- function(input, output, session){
         df_route_private_reactive(df_route)
         df_route_public_reactive(df_route_public)
         
+        display_map_reactive(1)
         if(first_time_map_reactive() == 0){
         output$myMap <- renderGoogle_map({
           google_map(key = api_key,
@@ -884,17 +884,17 @@ server <- function(input, output, session){
      output$titles <- renderText(paste('<p style = "color:#7E8BFA;font-family:verdana;">', map_title_reactive(), '</p', sep=''))
      if(map_title_reactive()=='Public vs Private Journey including Real-Time Parking Availability'){
        output$map_legend <- renderUI({
-         fluidRow(column(6, img(src = 'map_legend_live.png')))
+         fluidRow(column(6, img(src = 'map_legend_live.png'), bsTooltip("map_legend", "Time Restriction Non-Compliant: Parking spaces for which your length of stay exceeds their time restrictions.", placement = "top", trigger = "hover",options = NULL)))
        })}
      else{
        output$map_legend <- renderUI({
-         fluidRow(column(5, img(src = 'map_legend_historical_2.jpeg')))
+         fluidRow(column(5, img(src = 'map_legend_historical_2.jpeg'), bsTooltip("map_legend", "Time Restriction Non-Compliant: Parking spaces for which your length of stay exceeds their time restrictions.", placement = "top", trigger = "hover",options = NULL)))
        }) 
      }
     output$map_sliders <- renderUI({
       fluidRow(
         column(4, align='center', sliderInput(inputId = "max_stay_map", label = HTML('<img src= "clock_32.png"><br /><br />Length of stay in minutes'), min = 30, max=240, value = length_of_stay_reactive(), step=30)),   bsTooltip("max_stay_map", HTML("Increase the time you will be staying at the CBD and see how the Parkings that are not within your time limits turn yellow. <br />Please note that this only has an effect on the map and not the statistics below. To update the statistics, click again on Compare Journeys."), placement = "top", trigger = "hover",options = NULL),
-               column(2, align = 'center', actionButton("routes_zoom_out", "Zoom Out", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),bsTooltip("routes_zoom_out", "Click here to have full view of the routes.", placement = "top", trigger = "hover",options = NULL), column(2, align = 'center', actionButton("parking_zoom_in", "Zoom In", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")), bsTooltip("parking_zoom_in", "Click here to set the zoom at Parking level.", placement = "top", trigger = "hover",options = NULL), column(4, align = 'center', sliderInput(inputId = "disabled_max_distance", label = HTML('<img src="disabled_32.png"><br /><br />Distance in metres'), min = 0, max=1000, value =0, step=250)),   bsTooltip("disabled_max_distance", "Retrieve all disability parking spaces on the map within the selected distance.", placement = "top", trigger = "hover",options = NULL))
+               column(2, align = 'center', actionButton("routes_zoom_out", "Routes View", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")),bsTooltip("routes_zoom_out", "Click here to have full view of the routes.", placement = "top", trigger = "hover",options = NULL), column(2, align = 'center', actionButton("parking_zoom_in", "Parking View", style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76")), bsTooltip("parking_zoom_in", "Click here to set the zoom at Parking level.", placement = "top", trigger = "hover",options = NULL), column(4, align = 'center', sliderInput(inputId = "disabled_max_distance", label = HTML('<img src="disabled_32.png"><br /><br />Distance in metres'), min = 0, max=1000, value =0, step=250)),   bsTooltip("disabled_max_distance", "Retrieve all disability parking spaces on the map within the selected distance.", placement = "top", trigger = "hover",options = NULL))
                                                                                                                                                                                 
     })
     output$show_non_restricted <- renderUI({fluidRow(column(6,div(prettyCheckbox('restrictions_checkbox', 'Show only parkings within time restriction', FALSE), style = "color:#7E8BFA;font-family:verdana;")))})
