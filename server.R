@@ -425,9 +425,6 @@ server <- function(input, output, session){
       if(leaving_reactive()=='Now'){
         # googles car directions
         car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', 'now', 'pessimistic')
-        # checking if the journey has tolls
-        has_tolls <- has_toll_funct(car_directions)
-        has_tolls_reactive(has_tolls)
         
         # if no result ask user to input address again
         car_direction_status_reactive(car_directions$status)
@@ -437,6 +434,9 @@ server <- function(input, output, session){
           
         }
         else{
+        # checking if the journey has tolls
+        has_tolls <- has_toll_funct(car_directions)
+        has_tolls_reactive(has_tolls)
         # lats and longs
         # show_modal_spinner(text = 'This might take a little while...')
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
@@ -677,9 +677,6 @@ server <- function(input, output, session){
         }
       }
         car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', departure_hour, 'pessimistic')
-        # checking if the private route has tolls
-        has_tolls <- has_toll_funct(car_directions)
-        has_tolls_reactive(has_tolls)
         print('here1')
         car_direction_status_reactive(car_directions$status)
         if(car_directions$status=='ZERO_RESULTS'|car_directions$status=='NOT FOUND'){
@@ -688,8 +685,9 @@ server <- function(input, output, session){
           
         }
         else{
-        
-        # show_modal_spinner(text = 'This might take a little while...')
+        # checking if the private route has tolls
+        has_tolls <- has_toll_funct(car_directions)
+        has_tolls_reactive(has_tolls)
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
         end_lng <- car_directions$routes$legs[[1]]$end_location$lng
         dest_lat_reactive(end_lat)
