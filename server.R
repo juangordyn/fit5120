@@ -309,18 +309,18 @@ stats_while_waiting <- c(stat_1, stat_2, stat_3, stat_4, stat_5, stat_6, stat_7,
 
 
 # defining env variables to make Reticulate package work (to connect Python with Shiny)
-VIRTUALENV_NAME = '/home/ubuntu/env_yes'
+#VIRTUALENV_NAME = '/home/ubuntu/env_yes'
 
-Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
-Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
-Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
+#Sys.setenv(PYTHON_PATH = '/usr/bin/python3')
+#Sys.setenv(VIRTUALENV_NAME = paste0(VIRTUALENV_NAME, '/'))
+#Sys.setenv(RETICULATE_PYTHON = paste0(VIRTUALENV_NAME, '/bin/python3'))
 
 server <- function(input, output, session){
   # env variables
-  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
-  python_path = Sys.getenv('PYTHON_PATH')
-  reticulate::use_python(python_path)
-  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  #virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  #python_path = Sys.getenv('PYTHON_PATH')
+  #reticulate::use_python(python_path)
+  #reticulate::use_virtualenv(virtualenv_dir, required = T)
   
   destination_reactive <- reactiveVal('')
   origin_reactive <- reactiveVal('')
@@ -406,8 +406,8 @@ server <- function(input, output, session){
     }
     
     # we will use the functions in this python script
-    #python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
-    #reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
+    python_path = '/Users/jgordyn/opt/anaconda3/envs/nlp_new/bin/python3.7'
+    reticulate::use_virtualenv('/Users/jgordyn/opt/anaconda3/envs/nlp_new', required = T)
     reticulate::source_python("python_helper_functions.py")
     
     cbd_distance <- 0
@@ -425,7 +425,6 @@ server <- function(input, output, session){
       if(leaving_reactive()=='Now'){
         # googles car directions
         car_directions <- directions(origin_reactive(), destination_reactive(), 'driving', 'now', 'pessimistic')
-        
         # if no result ask user to input address again
         car_direction_status_reactive(car_directions$status)
         if(car_directions$status=='ZERO_RESULTS'| car_directions$status=='NOT_FOUND'){
@@ -688,6 +687,7 @@ server <- function(input, output, session){
         # checking if the private route has tolls
         has_tolls <- has_toll_funct(car_directions)
         has_tolls_reactive(has_tolls)
+        # show_modal_spinner(text = 'This might take a little while...')
         end_lat <- car_directions$routes$legs[[1]]$end_location$lat
         end_lng <- car_directions$routes$legs[[1]]$end_location$lng
         dest_lat_reactive(end_lat)
@@ -896,6 +896,7 @@ server <- function(input, output, session){
                                                                                                                                                                                 
     })
     output$show_non_restricted <- renderUI({fluidRow(column(6,div(prettyCheckbox('restrictions_checkbox', 'Show only parkings within time restriction', FALSE), style = "color:#7E8BFA;font-family:verdana;")))})
+    output$sep_line <- renderUI({hr(style="border-top: 6px solid #7E8BFA;")})
     output$journey_icons <- renderUI({
       fluidRow(width = 12, column(4,align = "center", img(src = "bus_128.png", width = "25%", height = "25%")), column(4, align = "center", img(src = "car_128.png", width = "25%", height = "25%")), column(4, align = "center", img(src = "parking_128.png", width = "25%", height = "25%")))})
     output$show_time_statistics <- renderUI({
@@ -912,6 +913,11 @@ server <- function(input, output, session){
       fluidRow(width = 12, column(1,''), valueBoxOutput("benefits_public_output", width=10),column(1, ''))
     })
     
+    output$expand_contract_all <- renderUI({
+      
+      fluidRow(width = 12, column(2, align='center', actionButton("expand_all", "Expand all", style=" border-radius: 8px; color: white; background-color: #4472C4; border: 2px solid #4472C4")), column(8, ''), column(2, align='center',actionButton("contract_all", "Contract all", style=" border-radius: 8px; color: white; background-color: #4472C4; border: 2px solid #4472C4")))
+      
+    })
      # dashboard stats output
     output$time_private <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(total_time_private_reactive(), format="d", big.mark=','),'mins'),'</center>', sep='')) , HTML(paste('<center><b>Total Journey Time Private Vehicle</b></center><br /><center><button class="btn action-button" type="button" id="ExpandTimePrivate" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_cost_private" class="triangle_down"></div></button></center>'), sep=''), icon = icon("clock"), color = "orange")})
     output$parking_stats <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(parking_occupation_reactive(), format="d", big.mark=','),'%'),'</center>', sep='')) , HTML(paste('<center><b>Parking Occupation</b></center><br /><center><button class="btn action-button" type="button" id="ExpandParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_down" class="triangle_down"></div></button></center>', sep='')), icon = icon("parking"),color = "purple")})
@@ -965,6 +971,25 @@ server <- function(input, output, session){
       output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(0, format="d", big.mark=',')),'</center>', sep='')), HTML(paste('<center><b>exclusive Parking spaces within ', input$disabled_max_distance, ' mts of the destination<b/></center>' ), sep=''), icon = icon("wheelchair"),color = "purple")})
     }
     })
+  
+  observeEvent(input$expand_all, {
+    output$parking_stats <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(parking_occupation_reactive(), format="d", big.mark=','),'%'),'</center>', sep='')) , HTML(paste('<center><b>Parking Occupation</b></center><br />Find Parking Time: ', parking_time_reactive(), ' mins<br /><br />Parking Cost: $ ', parking_cost_reactive(), '<br /><br />Time restriction non-availability: ', time_restriction_ratio_reactive(),'%<br /><br />Parking fine probability*: ', round(mean(parking_statistics_df_reactive()$fine_prob, na.rm=TRUE)), ' %<br /><br /><br /><font size="-2">*Parking fine probability has been calculated as the proportion of vehicles that committed a parking infraction over the total vehicles that parked in that area for the selected time and day of the week, according to Historical data.</font><br /><br /><center><button class="btn action-button" type="button" id="ContractParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="arrow-up"></div></button></center>', sep='')), icon = icon("parking"),color = "purple")})
+    output$time_public <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(total_time_public_reactive(), format="d", big.mark=','),'mins'),'</center>', sep='')) , HTML(paste('<center><b>Total Journey Time Public</b></center><br />',public_steps_long(),'<br /><center><button class="btn action-button" type="button" id="ContractTimePublic" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_public" class="arrow-up"></div></button></center>'), sep=''), icon = icon("clock"),color = "green")})
+    output$time_private <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(total_time_private_reactive(), format="d", big.mark=','),'mins'),'</center>', sep='')) , HTML(paste('<center><b>Total Journey Time Private Vehicle</b></center><br />',  time_steps_private_reactive(), '<br /><br /><center><button class="btn action-button" type="button" id="ContractTimePrivate" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_cost_private_up" class="arrow-up"></div></button></center>'), sep=''), icon = icon("clock"), color = "orange")})
+    if(has_tolls_reactive()=='No tolls'){output$cost_private <- renderValueBox({valueBox(HTML(paste('<center>',paste('$', total_private_cost_reactive()),'</center>', sep='')) , HTML(paste('<center><b>Total Journey Cost Private Vehicle</b></center><br />Driving Cost*: $', driving_cost_reactive(),'<br />Parking Cost: $', parking_cost_reactive()), '<br />Tolls: ', has_tolls_reactive(), '<br /><br /><font size="-2">*Driving cost is estimated by multiplying driven distance by 2020 average fuel consumption per km for vehicles in Australia by average price of petrol Litre in Melbourne.</font><br /><br /><center><button class="btn action-button" type="button" id="ContractCostPrivate" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_cost_private_up" class="arrow-up"></div></button></center>', sep=''), icon = icon("dollar-sign"), color = "orange")})}
+    else{output$cost_private <- renderValueBox({valueBox(HTML(paste('<center>',paste('$', total_private_cost_reactive()),'</center>', sep='')) , HTML(paste('<b><center>+ ADDITIONAL COST OF TOLLS</center></b><center><b>Total Journey Cost Private Vehicle</b></center><br />Driving Cost*: $', driving_cost_reactive(),'<br />Parking Cost: $', parking_cost_reactive()), '<br />Tolls: Yes<br /><br /><font size="-2">*Driving cost is estimated by multiplying driven distance by 2020 average fuel consumption per km for vehicles in Australia by average price of petrol Litre in Melbourne.</font><br /><br /><center><button class="btn action-button" type="button" id="ContractCostPrivateTolls" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_cost_private_up" class="arrow-up"></div></button></center>', sep=''), icon = icon("dollar-sign"), color = "orange")})}
+    output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(min_distance_disabled_reactive(), format="d", big.mark=','),'mts'),'</center>', sep='')), HTML(paste('<center><b>to the closest parking space for people with disabilities</b></center><br /><br /><b>',  count_disabled_parkings_reactive(), '</b> exclusive Parking spaces within ', input$disabled_max_distance, ' mts of the destination<br /><br /><center><button class="btn action-button" type="button" id="ContractDisabledParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="arrow-up"></div></button></center>'), sep=''), icon = icon("wheelchair"),color = "purple")})
+  })
+  
+  observeEvent(input$contract_all, {
+    output$parking_stats <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(parking_occupation_reactive(), format="d", big.mark=','),'%'),'</center>', sep='')) , HTML(paste('<center><b>Parking Occupation</b></center><br /><center><button class="btn action-button" type="button" id="ExpandParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_down" class="triangle_down"></div></button></center>', sep='')), icon = icon("parking"),color = "purple")})
+    output$time_public <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(total_time_public_reactive(), format="d", big.mark=','),'mins'),'</center>', sep='')) , HTML(paste('<center><b>Total Journey Time Public</b></center><br /><center><button class="btn action-button" type="button" id="ExpandTimePublic" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_public" class="triangle_down"></div></button></center>'), sep=''), icon = icon("clock"),color = "green")})
+    output$time_private <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(total_time_private_reactive(), format="d", big.mark=','),'mins'),'</center>', sep='')) , HTML(paste('<center><b>Total Journey Time Private Vehicle</b></center><br /><center><button class="btn action-button" type="button" id="ExpandTimePrivate" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_cost_private" class="triangle_down"></div></button></center>'), sep=''), icon = icon("clock"), color = "orange")})
+    if(has_tolls_reactive()=='No tolls'){output$cost_private <- renderValueBox({valueBox(HTML(paste('<center>',paste('$', total_private_cost_reactive()),'</center>', sep='')) , HTML(paste('<center><b>Total Journey Cost Private Vehicle</b></center><br /><center><button class="btn action-button" type="button" id="ExpandCostPrivate" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_cost_private" class="triangle_down"></div></button></center>', sep='')), icon = icon("dollar-sign"), color = "orange")})}
+    else{output$cost_private <- renderValueBox({valueBox(HTML(paste('<center>',paste('$', total_private_cost_reactive()),'</center>', sep='')) , HTML(paste('<b><center>+ ADDITIONAL COST OF TOLLS</b></center><center><b>Total Journey Cost Private Vehicle</b></center><br /><center><button class="btn action-button" type="button" id="ExpandCostPrivateTolls" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_cost_private" class="triangle_down"></div></button></center>', sep='')), icon = icon("dollar-sign"), color = "orange")})}
+    output$parking_disabled <- renderValueBox({valueBox(HTML(paste('<center>',paste(formatC(min_distance_disabled_reactive(), format="d", big.mark=','),'mts'),'</center>', sep='')), HTML(paste('<center><b>to the closest parking space for people with disabilities</center><br /><center><button class="btn action-button" type="button" id="ExpandDisabledParking" style=" border-radius: 8px; color: white; background-color: #E56B76; border: 2px solid #E56B76"><div id="arrow_time_parking_up" class="triangle_down"></div></button></center>'), sep=''), icon = icon("wheelchair"),color = "purple")})
+    })
+  
   
   observeEvent(input$ExpandDisabledParking, {
     
